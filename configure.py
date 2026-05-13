@@ -200,6 +200,24 @@ def write_mcp_config(config: dict) -> dict:
         return {"ok": False, "error": str(e)}
 
 
+TEMPLATE_DEST = {
+    "template-claude":    "CLAUDE.md",
+    "template-decisions": os.path.join("docs", "DECISIONS.md"),
+}
+
+
+def deploy_template(file: str, dest_dir: str, content: str) -> dict:
+    if file not in TEMPLATE_DEST:
+        return {"ok": False, "error": f"Unknown template: {file}"}
+    dest_path = Path(dest_dir).expanduser() / TEMPLATE_DEST[file]
+    try:
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        dest_path.write_text(content, encoding="utf-8")
+        return {"ok": True, "path": str(dest_path)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 # ── HTTP layer ────────────────────────────────────────────────────────────────
 
 HTML = """<!DOCTYPE html>
@@ -377,14 +395,25 @@ HTML = """<!DOCTYPE html>
 
 <section id="templates">
   <h2>Project Templates <span class="scope-badge project">per-project</span></h2>
-  <p class="section-desc">These templates live in <strong>~/Templates/claude-code-starter/</strong> and are meant to be copied into the root of every new project. They give Claude project-specific context that overrides or extends your global config. Edit them here to change what every new project starts with.</p>
-  <div class="info-box">To use these in a new project: <code>cp ~/Templates/claude-code-starter/CLAUDE.md ./CLAUDE.md</code> then customise the placeholders for your project name, stack, and architecture.</div>
-  <div class="tabs" style="margin-top:16px">
+  <p class="section-desc">These templates live in <strong>~/Templates/claude-code-starter/</strong>. Edit them here to change what every new project starts with, then deploy them directly into any project folder.</p>
+  <div class="tabs">
     <div class="tab active" onclick="switchTpl('template-claude',this)">CLAUDE.md starter</div>
     <div class="tab" onclick="switchTpl('template-decisions',this)">DECISIONS.md starter</div>
   </div>
-  <textarea id="tpl-editor" style="min-height:440px"></textarea>
-  <button onclick="saveTpl()" style="margin-top:12px">Save Template</button>
+  <textarea id="tpl-editor" style="min-height:380px"></textarea>
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button onclick="saveTpl()">Save Template</button>
+    <button class="sec" onclick="document.getElementById('deploy-panel').style.display=document.getElementById('deploy-panel').style.display==='none'?'block':'none'">Copy to Project...</button>
+  </div>
+  <div id="deploy-panel" style="display:none;margin-top:16px;padding:16px;background:#141414;border:1px solid #2a2a2a;border-radius:8px">
+    <span class="field-label">Project folder path</span>
+    <p class="field-help" style="margin-bottom:10px">CLAUDE.md starter → <code>{folder}/CLAUDE.md</code> &nbsp;·&nbsp; DECISIONS.md starter → <code>{folder}/docs/DECISIONS.md</code></p>
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <input type="text" id="deploy-path" placeholder="/home/peyton/repos/my-project" style="flex:1">
+      <button onclick="deployTpl()" style="flex-shrink:0;white-space:nowrap">Copy Now</button>
+    </div>
+    <p class="hint" style="margin-top:8px">The folder must already exist. Subdirectories (like docs/) are created automatically. Existing files are overwritten.</p>
+  </div>
 </section>
 
 </main>
@@ -584,6 +613,14 @@ async function saveTpl(){
   d.ok?toast('Template saved'):toast('Error: '+d.error,true);
 }
 
+async function deployTpl(){
+  const dest=document.getElementById('deploy-path').value.trim();
+  if(!dest){toast('Enter a project folder path',true);return;}
+  const content=document.getElementById('tpl-editor').value;
+  const d=await api('/api/templates/deploy','POST',{file:curTpl,dest,content});
+  d.ok?toast('Copied to '+d.path):toast('Error: '+d.error,true);
+}
+
 loadDash();
 </script>
 </body>
@@ -636,6 +673,9 @@ class ConfigHandler(BaseHTTPRequestHandler):
         elif path == "/api/plugins/toggle":
             body = self._read_body()
             self._send_json(update_enabled_plugins({body.get("id", ""): body.get("enabled", False)}))
+        elif path == "/api/templates/deploy":
+            body = self._read_body()
+            self._send_json(deploy_template(body.get("file", ""), body.get("dest", ""), body.get("content", "")))
         else:
             self._send_json({"error": "Not found"}, 404)
 
