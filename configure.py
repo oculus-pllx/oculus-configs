@@ -541,10 +541,25 @@ class ConfigHandler(BaseHTTPRequestHandler):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
+def _open_browser(url: str):
+    import subprocess
+    import platform
+    uname = platform.uname()
+    if "microsoft" in uname.release.lower() or "wsl" in uname.release.lower():
+        try:
+            subprocess.Popen(["/mnt/c/Windows/System32/cmd.exe", "/c", "start", url],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return
+        except Exception:
+            pass
+    webbrowser.open(url)
+
+
 def main():
+    url = f"http://localhost:{PORT}"
     server = HTTPServer(("localhost", PORT), ConfigHandler)
-    threading.Timer(0.5, lambda: webbrowser.open(f"http://localhost:{PORT}")).start()
-    print(f"oculus-configs UI → http://localhost:{PORT}")
+    threading.Timer(0.5, lambda: _open_browser(url)).start()
+    print(f"oculus-configs UI → {url}")
     print("Ctrl+C to stop.")
     try:
         server.serve_forever()
