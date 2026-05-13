@@ -46,37 +46,54 @@ def get_status() -> dict:
     # CLAUDE.md
     p = CLAUDE_DIR / "CLAUDE.md"
     if p.exists():
-        items.append({"label": "~/.claude/CLAUDE.md", "status": "ok", "message": "Installed"})
+        items.append({"label": "~/.claude/CLAUDE.md", "status": "ok", "message": "Installed",
+                      "desc": "Global instructions Claude reads at the start of every session"})
     else:
-        items.append({"label": "~/.claude/CLAUDE.md", "status": "err", "message": "Missing — run install.sh"})
+        items.append({"label": "~/.claude/CLAUDE.md", "status": "err", "message": "Missing",
+                      "desc": "Global instructions Claude reads at the start of every session",
+                      "fix": "Run bash install.sh in the oculus-configs folder"})
 
     # rules/
     rules_dir = CLAUDE_DIR / "rules"
     if rules_dir.exists() and any(rules_dir.iterdir()):
-        items.append({"label": "~/.claude/rules/", "status": "ok", "message": f"{len(list(rules_dir.glob('*.md')))} rule files"})
+        items.append({"label": "~/.claude/rules/", "status": "ok",
+                      "message": f"{len(list(rules_dir.glob('*.md')))} rule files",
+                      "desc": "Modular rule files imported by CLAUDE.md (code quality, plugin usage)"})
     else:
-        items.append({"label": "~/.claude/rules/", "status": "warn", "message": "Empty or missing"})
+        items.append({"label": "~/.claude/rules/", "status": "warn", "message": "Empty or missing",
+                      "desc": "Modular rule files imported by CLAUDE.md",
+                      "fix": "Run bash install.sh in the oculus-configs folder"})
 
     # MCP config
     mcp_path = CONFIG_PATHS["mcp"]
     if not mcp_path.exists():
-        items.append({"label": "MCP Config", "status": "err", "message": "Missing — run install.sh"})
+        items.append({"label": "MCP Config", "status": "err", "message": "Missing",
+                      "desc": "Connects Claude to external tools (GitHub, docs) during sessions",
+                      "fix": "Run bash install.sh in the oculus-configs folder"})
     else:
         try:
             mcp = json.loads(mcp_path.read_text())
             token = mcp.get("mcpServers", {}).get("github", {}).get("env", {}).get("GITHUB_PERSONAL_ACCESS_TOKEN", "")
             if token in ("", "REPLACE_WITH_YOUR_TOKEN"):
-                items.append({"label": "MCP Config", "status": "warn", "message": "Present — GitHub token not set"})
+                items.append({"label": "MCP Config", "status": "warn", "message": "GitHub token not set",
+                              "desc": "Connects Claude to external tools (GitHub, docs) during sessions",
+                              "fix": "Go to MCP Setup tab → paste your GitHub token → Save"})
             else:
-                items.append({"label": "MCP Config", "status": "ok", "message": "Configured"})
+                items.append({"label": "MCP Config", "status": "ok", "message": "Configured",
+                              "desc": "Connects Claude to external tools (GitHub, docs) during sessions"})
         except Exception:
-            items.append({"label": "MCP Config", "status": "err", "message": "Invalid JSON"})
+            items.append({"label": "MCP Config", "status": "err", "message": "Invalid JSON",
+                          "desc": "Connects Claude to external tools (GitHub, docs) during sessions",
+                          "fix": "Go to MCP Setup tab and re-save the config"})
 
     # Templates
     if STARTER_DIR.exists():
-        items.append({"label": "~/Templates/claude-code-starter", "status": "ok", "message": "Installed"})
+        items.append({"label": "~/Templates/claude-code-starter", "status": "ok", "message": "Installed",
+                      "desc": "Starter CLAUDE.md and DECISIONS.md copied into new projects"})
     else:
-        items.append({"label": "~/Templates/claude-code-starter", "status": "err", "message": "Missing — run install.sh"})
+        items.append({"label": "~/Templates/claude-code-starter", "status": "err", "message": "Missing",
+                      "desc": "Starter CLAUDE.md and DECISIONS.md copied into new projects",
+                      "fix": "Run bash install.sh in the oculus-configs folder"})
 
     # Plugins
     plugins_path = CLAUDE_DIR / "plugins" / "installed_plugins.json"
@@ -86,11 +103,16 @@ def get_status() -> dict:
             data = json.loads(plugins_path.read_text())
             installed = list(data.get("plugins", {}).keys())
             enabled = [p for p in installed if enabled_plugins.get(p, False)]
-            items.append({"label": "Plugins", "status": "ok", "message": f"{len(installed)} installed, {len(enabled)} enabled"})
+            items.append({"label": "Plugins", "status": "ok",
+                          "message": f"{len(installed)} installed, {len(enabled)} enabled",
+                          "desc": "Skill packs that extend Claude's workflow capabilities"})
         except Exception:
-            items.append({"label": "Plugins", "status": "warn", "message": "Could not read plugin state"})
+            items.append({"label": "Plugins", "status": "warn", "message": "Could not read plugin state",
+                          "desc": "Skill packs that extend Claude's workflow capabilities"})
     else:
-        items.append({"label": "Plugins", "status": "warn", "message": "No plugins installed"})
+        items.append({"label": "Plugins", "status": "warn", "message": "No plugins installed",
+                      "desc": "Skill packs that extend Claude's workflow capabilities",
+                      "fix": "Open Claude Code and run: /plugin install superpowers@claude-plugins-official"})
 
     return {"items": items}
 
@@ -197,15 +219,23 @@ HTML = """<!DOCTYPE html>
     main{flex:1;overflow-y:auto;padding:32px}
     section{display:none}
     section.active{display:block}
-    h2{font-size:18px;font-weight:600;margin-bottom:20px;color:#fff}
-    h3{font-size:14px;font-weight:600;margin-bottom:12px;color:#ccc}
-    .status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-bottom:24px}
+    h2{font-size:18px;font-weight:600;margin-bottom:6px;color:#fff}
+    h3{font-size:14px;font-weight:600;margin-bottom:10px;color:#ccc;margin-top:20px}
+    .section-desc{font-size:13px;color:#666;margin-bottom:20px;line-height:1.5;max-width:700px}
+    .section-desc strong{color:#999}
+    .status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:24px}
     .card{background:#1a1a1a;border-radius:8px;padding:16px;border:1px solid #2a2a2a}
-    .card .lbl{font-size:11px;color:#666;margin-bottom:6px;font-family:monospace}
+    .card.warn{border-color:#78350f}.card.err{border-color:#7f1d1d}
+    .card .lbl{font-size:11px;color:#666;margin-bottom:4px;font-family:monospace}
+    .card .card-desc{font-size:11px;color:#444;margin-bottom:8px;line-height:1.4}
     .card .val{font-size:13px;color:#e0e0e0;display:flex;align-items:center;gap:8px}
+    .card .fix{font-size:11px;color:#f59e0b;margin-top:8px;padding-top:8px;border-top:1px solid #2a2a2a;line-height:1.4}
+    .card .fix::before{content:"→ "}
     .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
     .dot.ok{background:#22c55e}.dot.warn{background:#f59e0b}.dot.err{background:#ef4444}
-    .form-group{margin-bottom:18px}
+    .form-group{margin-bottom:20px}
+    .field-label{font-size:12px;color:#888;margin-bottom:4px;display:block}
+    .field-help{font-size:11px;color:#555;margin-top:5px;line-height:1.5}
     label{display:block;font-size:12px;color:#888;margin-bottom:6px}
     input[type=text],textarea,select{width:100%;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:10px 12px;font-size:14px;font-family:inherit;outline:none}
     input[type=text]:focus,textarea:focus,select:focus{border-color:#2563eb}
@@ -215,31 +245,38 @@ HTML = """<!DOCTYPE html>
     button:hover{background:#1d4ed8}
     button.sec{background:#252525}
     button.sec:hover{background:#333}
-    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
     table{width:100%;border-collapse:collapse;font-size:13px}
     th{text-align:left;color:#555;font-size:11px;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid #222}
-    td{padding:12px;border-bottom:1px solid #1e1e1e;color:#ccc}
+    td{padding:12px;border-bottom:1px solid #1e1e1e;color:#ccc;vertical-align:top}
     .toggle{position:relative;display:inline-block;width:38px;height:20px}
     .toggle input{opacity:0;width:0;height:0}
     .slider{position:absolute;cursor:pointer;inset:0;background:#333;border-radius:20px;transition:.2s}
     .slider:before{position:absolute;content:"";height:14px;width:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
     input:checked+.slider{background:#2563eb}
     input:checked+.slider:before{transform:translateX(18px)}
-    .code{font-family:'Courier New',monospace;background:#141414;border:1px solid #2a2a2a;border-radius:4px;padding:6px 10px;font-size:11px;color:#86efac;white-space:nowrap;overflow:auto;max-width:300px}
-    .mcp-row{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+    .code{font-family:'Courier New',monospace;background:#141414;border:1px solid #2a2a2a;border-radius:4px;padding:6px 10px;font-size:11px;color:#86efac;white-space:nowrap;overflow-x:auto;max-width:300px;display:block}
+    .mcp-row{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
     .mcp-row .inf{flex:1}
     .mcp-row .name{font-size:14px;color:#fff;margin-bottom:3px}
-    .mcp-row .cost{font-size:11px;color:#666}
+    .mcp-row .mcp-desc{font-size:12px;color:#666;margin-bottom:3px}
+    .mcp-row .cost{font-size:11px;color:#444}
     .tabs{display:flex;gap:6px;margin-bottom:14px}
     .tab{padding:7px 14px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;cursor:pointer;font-size:13px;color:#888}
     .tab.active{background:#2563eb;color:#fff;border-color:#2563eb}
-    .hint{font-size:11px;color:#555;margin-top:5px}
+    .hint{font-size:11px;color:#555;margin-top:5px;line-height:1.5}
     .toast{position:fixed;bottom:20px;right:20px;background:#22c55e;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;display:none;z-index:999}
     .toast.err{background:#ef4444}
-    .cb-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+    .cb-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
     .cb-row input{margin-top:2px;flex-shrink:0}
-    .cb-row .desc{font-size:12px;color:#666;margin-top:1px}
+    .cb-row .cb-label{font-size:13px;color:#ccc}
+    .cb-row .cb-help{font-size:11px;color:#555;margin-top:2px;line-height:1.4}
+    .info-box{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:12px;color:#666;line-height:1.6}
+    .info-box strong{color:#888}
     pre#preview{background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:16px;font-size:11px;color:#86efac;overflow:auto;height:520px;white-space:pre-wrap;font-family:'Courier New',monospace;line-height:1.5}
+    .scope-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:8px;vertical-align:middle;font-weight:500}
+    .scope-badge.global{background:#1e3a5f;color:#60a5fa}
+    .scope-badge.project{background:#1a2e1a;color:#4ade80}
   </style>
 </head>
 <body>
@@ -254,53 +291,61 @@ HTML = """<!DOCTYPE html>
 <main>
 
 <section id="dashboard" class="active">
-  <h2>Config Status</h2>
+  <h2>Config Status <span class="scope-badge global">global</span></h2>
+  <p class="section-desc">Health of your global Claude Code config in <strong>~/.claude/</strong>. These settings apply to <strong>every project</strong> on this machine. Project-specific rules live in a <code>CLAUDE.md</code> inside each project folder.</p>
   <div class="status-grid" id="status-grid"><div class="card"><div class="val">Loading...</div></div></div>
 </section>
 
 <section id="wizard">
-  <h2>CLAUDE.md Wizard</h2>
+  <h2>CLAUDE.md Wizard <span class="scope-badge global">global</span></h2>
+  <p class="section-desc">Builds your <strong>~/.claude/CLAUDE.md</strong> — the master instruction file Claude reads at the start of <em>every</em> session on this machine. Think of it as your standing orders. Tune it once, forget it. For rules specific to one project, edit the <code>CLAUDE.md</code> inside that project folder instead.</p>
   <div class="two-col">
     <div>
       <div class="form-group">
-        <label>Active Plugins</label>
+        <span class="field-label">Active Plugins</span>
+        <p class="field-help" style="margin-bottom:10px">Check the plugins you want Claude to load every session. Only enable what you actively use — each plugin adds overhead to every turn.</p>
         <div id="plugin-checks"></div>
       </div>
       <div class="form-group">
-        <label>Compact warning threshold</label>
+        <span class="field-label">Context compact threshold</span>
         <select id="threshold">
-          <option value="60">60% context used</option>
-          <option value="70" selected>70% context used</option>
-          <option value="80">80% context used</option>
+          <option value="60">60% — compact early, more headroom</option>
+          <option value="70" selected>70% — recommended default</option>
+          <option value="80">80% — squeeze more before compacting</option>
         </select>
+        <p class="field-help">When Claude's context window hits this %, you'll be reminded to run <code>/compact</code>. Compacting summarises the conversation so you can keep working without starting over. 70% is a safe default.</p>
       </div>
       <div class="form-group">
-        <label>Max MCP servers per session</label>
+        <span class="field-label">Max MCP servers per session</span>
         <select id="maxmcp">
-          <option value="2">2 servers</option>
+          <option value="2">2 servers — minimal overhead</option>
           <option value="3">3 servers</option>
-          <option value="4" selected>4 servers</option>
+          <option value="4" selected>4 servers — recommended max</option>
         </select>
+        <p class="field-help">Each active MCP server costs 100–500 tokens every single turn, even when unused. This sets the reminder limit. In practice most sessions only need GitHub + Context7.</p>
       </div>
       <div class="form-group">
-        <label>Custom notes (appended to file)</label>
-        <textarea id="notes" placeholder="Project-specific rules, preferred languages, anything permanent..."></textarea>
+        <span class="field-label">Personal notes (appended to file)</span>
+        <textarea id="notes" placeholder="Examples:&#10;- Preferred language: Python 3.12&#10;- Always use type hints&#10;- Never use print() for debugging, use logging&#10;- I work solo, no PR review process needed"></textarea>
+        <p class="field-help">Anything you always want Claude to know — your language preferences, style rules, team conventions. This gets added to the bottom of CLAUDE.md.</p>
       </div>
       <button onclick="saveClaudeMd()">Save to ~/.claude/CLAUDE.md</button>
     </div>
     <div>
-      <label>Live Preview</label>
-      <pre id="preview" style="margin-top:6px"></pre>
+      <span class="field-label">Live Preview</span>
+      <p class="field-help" style="margin-bottom:8px">Exactly what will be written to disk when you click Save.</p>
+      <pre id="preview"></pre>
     </div>
   </div>
 </section>
 
 <section id="mcp">
-  <h2>MCP Setup</h2>
+  <h2>MCP Setup <span class="scope-badge global">global</span></h2>
+  <p class="section-desc"><strong>MCP (Model Context Protocol)</strong> connects Claude to external tools during your sessions. Without it, Claude can only see files you paste in. With it, Claude can read GitHub issues, create PRs, and look up live library docs — automatically. Each server costs tokens every turn it's active, so only enable what you need.</p>
   <div class="form-group" style="max-width:560px">
-    <label>GitHub Personal Access Token</label>
+    <span class="field-label">GitHub Personal Access Token</span>
     <input type="text" id="gh-token" placeholder="ghp_...">
-    <p class="hint">Get one at github.com/settings/tokens &mdash; scopes: repo, read:org</p>
+    <p class="hint">Create one at <strong>github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</strong>.<br>Required scopes: <code>repo</code>, <code>read:org</code>. No expiry needed for a personal machine.</p>
   </div>
   <h3>Servers</h3>
   <div id="mcp-list"></div>
@@ -308,20 +353,24 @@ HTML = """<!DOCTYPE html>
 </section>
 
 <section id="plugins">
-  <h2>Plugins</h2>
+  <h2>Plugins <span class="scope-badge global">global</span></h2>
+  <p class="section-desc">Plugins add workflow skills to Claude Code — things like structured brainstorming, TDD enforcement, and code review checklists. <strong>Installed</strong> means the plugin files are on disk. <strong>Enabled</strong> means Claude actually loads them each session. You can install a plugin but leave it disabled to save overhead.</p>
+  <div class="info-box" style="margin-bottom:16px">To install a plugin, open a Claude Code session and run the command shown in the Install Command column. You cannot install plugins from this UI — Claude Code handles that.</div>
   <table>
-    <thead><tr><th>Plugin</th><th>Version</th><th>Installed</th><th>Enabled</th><th>Install Command</th></tr></thead>
+    <thead><tr><th>Plugin</th><th>What it does</th><th>Version</th><th>Installed</th><th>Enabled</th><th>Install Command</th></tr></thead>
     <tbody id="plugins-body"></tbody>
   </table>
 </section>
 
 <section id="templates">
-  <h2>Project Templates</h2>
-  <div class="tabs">
-    <div class="tab active" onclick="switchTpl('template-claude',this)">CLAUDE.md</div>
-    <div class="tab" onclick="switchTpl('template-decisions',this)">DECISIONS.md</div>
+  <h2>Project Templates <span class="scope-badge project">per-project</span></h2>
+  <p class="section-desc">These templates live in <strong>~/Templates/claude-code-starter/</strong> and are meant to be copied into the root of every new project. They give Claude project-specific context that overrides or extends your global config. Edit them here to change what every new project starts with.</p>
+  <div class="info-box">To use these in a new project: <code>cp ~/Templates/claude-code-starter/CLAUDE.md ./CLAUDE.md</code> then customise the placeholders for your project name, stack, and architecture.</div>
+  <div class="tabs" style="margin-top:16px">
+    <div class="tab active" onclick="switchTpl('template-claude',this)">CLAUDE.md starter</div>
+    <div class="tab" onclick="switchTpl('template-decisions',this)">DECISIONS.md starter</div>
   </div>
-  <textarea id="tpl-editor" style="min-height:480px"></textarea>
+  <textarea id="tpl-editor" style="min-height:440px"></textarea>
   <button onclick="saveTpl()" style="margin-top:12px">Save Template</button>
 </section>
 
@@ -358,14 +407,25 @@ async function api(path,method='GET',body=null){
 async function loadDash(){
   const d=await api('/api/status');
   document.getElementById('status-grid').innerHTML=d.items.map(i=>
-    `<div class="card"><div class="lbl">${i.label}</div><div class="val"><span class="dot ${i.status}"></span>${i.message}</div></div>`
+    `<div class="card ${i.status!=='ok'?i.status:''}">
+      <div class="lbl">${i.label}</div>
+      ${i.desc?`<div class="card-desc">${i.desc}</div>`:''}
+      <div class="val"><span class="dot ${i.status}"></span>${i.message}</div>
+      ${i.fix?`<div class="fix">${i.fix}</div>`:''}
+    </div>`
   ).join('');
 }
 
 async function loadWizard(){
   plugData=await api('/api/plugins');
   document.getElementById('plugin-checks').innerHTML=plugData.known.map(p=>
-    `<div class="cb-row"><input type="checkbox" value="${p.id}" ${p.installed?'checked':''}><div><div>${p.label}</div><div class="desc">${p.description}</div></div></div>`
+    `<div class="cb-row">
+      <input type="checkbox" value="${p.id}" ${p.installed?'checked':''}>
+      <div>
+        <div class="cb-label">${p.label}${!p.installed?' <span style="color:#555;font-size:11px">(not installed)</span>':''}</div>
+        <div class="cb-help">${p.description}</div>
+      </div>
+    </div>`
   ).join('');
   ['plugin-checks','notes','threshold','maxmcp'].forEach(id=>{
     document.getElementById(id).addEventListener('input',updatePreview);
@@ -428,12 +488,18 @@ async function loadMcp(){
   const token=mcpData.servers?.github?.env?.GITHUB_PERSONAL_ACCESS_TOKEN||'';
   document.getElementById('gh-token').value=token==='REPLACE_WITH_YOUR_TOKEN'?'':token;
   const servers=[
-    {id:'github',name:'GitHub',desc:'PR and issue workflow',cost:'200–400 tokens/turn'},
-    {id:'context7',name:'Context7',desc:'Live docs for fast-moving frameworks',cost:'100–300 tokens/turn'}
+    {id:'github',name:'GitHub',desc:'Lets Claude read issues, create PRs, search code, and comment — without you pasting anything in. Requires a token.',cost:'~200–400 tokens/turn when active'},
+    {id:'context7',name:'Context7',desc:'Pulls live, version-accurate docs for libraries you\'re using. Prevents Claude from hallucinating outdated API signatures. No token needed.',cost:'~100–300 tokens/turn when queried'}
   ];
   document.getElementById('mcp-list').innerHTML=servers.map(s=>
-    `<div class="mcp-row"><div class="inf"><div class="name">${s.name} — ${s.desc}</div><div class="cost">${s.cost}</div></div>
-    <label class="toggle"><input type="checkbox" id="mcp-${s.id}" ${mcpData.servers?.[s.id]?'checked':''}><span class="slider"></span></label></div>`
+    `<div class="mcp-row">
+      <div class="inf">
+        <div class="name">${s.name}</div>
+        <div class="mcp-desc">${s.desc}</div>
+        <div class="cost">${s.cost}</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="mcp-${s.id}" ${mcpData.servers?.[s.id]?'checked':''}><span class="slider"></span></label>
+    </div>`
   ).join('');
 }
 
@@ -453,10 +519,11 @@ async function loadPlugins(){
   document.getElementById('plugins-body').innerHTML=data.known.map(p=>
     `<tr>
       <td style="color:#fff">${p.label}</td>
+      <td style="color:#666;font-size:12px">${p.description}</td>
       <td style="color:#555">${p.version||'—'}</td>
       <td><span class="dot ${p.installed?'ok':'err'}" style="display:inline-block;margin-right:6px"></span>${p.installed?'Yes':'No'}</td>
       <td>${p.installed?`<label class="toggle"><input type="checkbox" ${p.enabled?'checked':''} onchange="togglePlugin('${p.id}',this.checked)"><span class="slider"></span></label>`:'—'}</td>
-      <td>${!p.installed?`<span class="code">${p.install}</span>`:'—'}</td>
+      <td>${!p.installed?`<span class="code">${p.install}</span>`:'<span style="color:#444">already installed</span>'}</td>
     </tr>`
   ).join('');
 }
