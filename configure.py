@@ -489,7 +489,7 @@ async function loadMcp(){
   document.getElementById('gh-token').value=token==='REPLACE_WITH_YOUR_TOKEN'?'':token;
   const servers=[
     {id:'github',name:'GitHub',desc:'Lets Claude read issues, create PRs, search code, and comment — without you pasting anything in. Requires a token.',cost:'~200–400 tokens/turn when active'},
-    {id:'context7',name:'Context7',desc:'Pulls live, version-accurate docs for libraries you\'re using. Prevents Claude from hallucinating outdated API signatures. No token needed.',cost:'~100–300 tokens/turn when queried'}
+    {id:'context7',name:'Context7',desc:'Pulls live, version-accurate docs for libraries in use. Prevents Claude from hallucinating outdated API signatures. No token needed.',cost:'~100–300 tokens/turn when queried'}
   ];
   document.getElementById('mcp-list').innerHTML=servers.map(s=>
     `<div class="mcp-row">
