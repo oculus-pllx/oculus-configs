@@ -297,45 +297,58 @@ HTML = """<!DOCTYPE html>
 </section>
 
 <section id="wizard">
-  <h2>CLAUDE.md Wizard <span class="scope-badge global">global</span></h2>
-  <p class="section-desc">Builds your <strong>~/.claude/CLAUDE.md</strong> — the master instruction file Claude reads at the start of <em>every</em> session on this machine. Think of it as your standing orders. Tune it once, forget it. For rules specific to one project, edit the <code>CLAUDE.md</code> inside that project folder instead.</p>
-  <div class="two-col">
-    <div>
-      <div class="form-group">
-        <span class="field-label">Active Plugins</span>
-        <p class="field-help" style="margin-bottom:10px">Check the plugins you want Claude to load every session. Only enable what you actively use — each plugin adds overhead to every turn.</p>
-        <div id="plugin-checks"></div>
+  <h2>CLAUDE.md <span class="scope-badge global">global</span></h2>
+  <p class="section-desc">Your <strong>~/.claude/CLAUDE.md</strong> — Claude reads this at the start of <em>every</em> session on this machine. Use the Wizard to build it from a form, or Raw Edit to modify it directly.</p>
+  <div class="tabs">
+    <div class="tab active" id="tab-wizard" onclick="switchWizardMode('wizard',this)">Wizard</div>
+    <div class="tab" id="tab-raw" onclick="switchWizardMode('raw',this)">Raw Edit</div>
+  </div>
+
+  <div id="wizard-form">
+    <div class="two-col">
+      <div>
+        <div class="form-group">
+          <span class="field-label">Active Plugins</span>
+          <p class="field-help" style="margin-bottom:10px">Check the plugins you want Claude to load every session. Only enable what you actively use — each plugin adds overhead to every turn.</p>
+          <div id="plugin-checks"></div>
+        </div>
+        <div class="form-group">
+          <span class="field-label">Context compact threshold</span>
+          <select id="threshold">
+            <option value="60">60% — compact early, more headroom</option>
+            <option value="70" selected>70% — recommended default</option>
+            <option value="80">80% — squeeze more before compacting</option>
+          </select>
+          <p class="field-help">When Claude hits this % context usage, you get reminded to run <code>/compact</code>, which summarises the conversation so you can keep going. 70% is a safe default.</p>
+        </div>
+        <div class="form-group">
+          <span class="field-label">Max MCP servers per session</span>
+          <select id="maxmcp">
+            <option value="2">2 servers — minimal overhead</option>
+            <option value="3">3 servers</option>
+            <option value="4" selected>4 servers — recommended max</option>
+          </select>
+          <p class="field-help">Each active MCP server costs 100–500 tokens every turn, even when unused. In practice most sessions only need GitHub + Context7.</p>
+        </div>
+        <div class="form-group">
+          <span class="field-label">Personal notes (appended to file)</span>
+          <textarea id="notes" placeholder="Examples:&#10;- Preferred language: Python 3.12&#10;- Always use type hints&#10;- Never use print() for debugging, use logging&#10;- I work solo, no PR review process needed"></textarea>
+          <p class="field-help">Anything you always want Claude to know — language preferences, style rules, team conventions.</p>
+        </div>
+        <button onclick="saveClaudeMd()">Save to ~/.claude/CLAUDE.md</button>
       </div>
-      <div class="form-group">
-        <span class="field-label">Context compact threshold</span>
-        <select id="threshold">
-          <option value="60">60% — compact early, more headroom</option>
-          <option value="70" selected>70% — recommended default</option>
-          <option value="80">80% — squeeze more before compacting</option>
-        </select>
-        <p class="field-help">When Claude's context window hits this %, you'll be reminded to run <code>/compact</code>. Compacting summarises the conversation so you can keep working without starting over. 70% is a safe default.</p>
+      <div>
+        <span class="field-label">Live Preview</span>
+        <p class="field-help" style="margin-bottom:8px">Exactly what will be written to disk when you click Save.</p>
+        <pre id="preview"></pre>
       </div>
-      <div class="form-group">
-        <span class="field-label">Max MCP servers per session</span>
-        <select id="maxmcp">
-          <option value="2">2 servers — minimal overhead</option>
-          <option value="3">3 servers</option>
-          <option value="4" selected>4 servers — recommended max</option>
-        </select>
-        <p class="field-help">Each active MCP server costs 100–500 tokens every single turn, even when unused. This sets the reminder limit. In practice most sessions only need GitHub + Context7.</p>
-      </div>
-      <div class="form-group">
-        <span class="field-label">Personal notes (appended to file)</span>
-        <textarea id="notes" placeholder="Examples:&#10;- Preferred language: Python 3.12&#10;- Always use type hints&#10;- Never use print() for debugging, use logging&#10;- I work solo, no PR review process needed"></textarea>
-        <p class="field-help">Anything you always want Claude to know — your language preferences, style rules, team conventions. This gets added to the bottom of CLAUDE.md.</p>
-      </div>
-      <button onclick="saveClaudeMd()">Save to ~/.claude/CLAUDE.md</button>
     </div>
-    <div>
-      <span class="field-label">Live Preview</span>
-      <p class="field-help" style="margin-bottom:8px">Exactly what will be written to disk when you click Save.</p>
-      <pre id="preview"></pre>
-    </div>
+  </div>
+
+  <div id="wizard-raw" style="display:none">
+    <p class="field-help" style="margin-bottom:12px">Editing <strong>~/.claude/CLAUDE.md</strong> directly. Changes are saved as-is — no formatting applied.</p>
+    <textarea id="raw-editor" style="min-height:520px"></textarea>
+    <button onclick="saveRawClaudeMd()" style="margin-top:12px">Save to ~/.claude/CLAUDE.md</button>
   </div>
 </section>
 
@@ -414,6 +427,27 @@ async function loadDash(){
       ${i.fix?`<div class="fix">${i.fix}</div>`:''}
     </div>`
   ).join('');
+}
+
+function switchWizardMode(mode,el){
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(mode==='raw'){
+    document.getElementById('wizard-form').style.display='none';
+    document.getElementById('wizard-raw').style.display='block';
+    api('/api/config/CLAUDE.md').then(d=>{
+      document.getElementById('raw-editor').value=d.content||'';
+    });
+  } else {
+    document.getElementById('wizard-raw').style.display='none';
+    document.getElementById('wizard-form').style.display='block';
+  }
+}
+
+async function saveRawClaudeMd(){
+  const content=document.getElementById('raw-editor').value;
+  const d=await api('/api/config/CLAUDE.md','POST',{content});
+  d.ok?toast('Saved ~/.claude/CLAUDE.md'):toast('Error: '+d.error,true);
 }
 
 async function loadWizard(){
