@@ -180,5 +180,24 @@ class TestMcpConfig(unittest.TestCase):
             self.assertIn("context7", saved["mcpServers"])
 
 
+class TestHtmlJs(unittest.TestCase):
+    def test_js_syntax(self):
+        import configure
+        import subprocess
+        import shutil
+        if not shutil.which("node"):
+            self.skipTest("node not available")
+        html = configure.HTML
+        js = html[html.find("<script>") + 8:html.find("</script>")]
+        with tempfile.NamedTemporaryFile(suffix=".js", mode="w", delete=False) as f:
+            f.write(js)
+            name = f.name
+        try:
+            r = subprocess.run(["node", "--check", name], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, f"JS syntax error:\n{r.stderr}")
+        finally:
+            Path(name).unlink(missing_ok=True)
+
+
 if __name__ == "__main__":
     unittest.main()
