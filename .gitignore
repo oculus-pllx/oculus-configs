@@ -1,3 +1,10 @@
+# Session bridges (ephemeral, never commit)
+HANDOFF.md
+
+# Python
+__pycache__/
+*.pyc
+
 # OS
 .DS_Store
 Thumbs.db
