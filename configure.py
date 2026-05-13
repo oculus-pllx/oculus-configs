@@ -200,6 +200,23 @@ def write_mcp_config(config: dict) -> dict:
         return {"ok": False, "error": str(e)}
 
 
+def browse_dir(path: str) -> dict:
+    try:
+        p = Path(path).expanduser().resolve()
+        if not p.exists() or not p.is_dir():
+            return {"error": f"Not a directory: {path}"}
+        dirs = sorted(
+            [d.name for d in p.iterdir() if d.is_dir() and not d.name.startswith(".")],
+            key=str.lower
+        )
+        parent = str(p.parent) if p.parent != p else None
+        return {"path": str(p), "dirs": dirs, "parent": parent}
+    except PermissionError:
+        return {"error": "Permission denied", "path": path, "dirs": [], "parent": str(Path(path).parent)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 TEMPLATE_DEST = {
     "template-claude":    "CLAUDE.md",
     "template-decisions": os.path.join("docs", "DECISIONS.md"),
@@ -295,6 +312,20 @@ HTML = """<!DOCTYPE html>
     .scope-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:8px;vertical-align:middle;font-weight:500}
     .scope-badge.global{background:#1e3a5f;color:#60a5fa}
     .scope-badge.project{background:#1a2e1a;color:#4ade80}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center}
+    .modal{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;width:520px;max-height:520px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+    .modal-header{padding:16px 20px;border-bottom:1px solid #2a2a2a;display:flex;justify-content:space-between;align-items:center}
+    .modal-header h3{margin:0;font-size:14px;color:#fff}
+    .modal-header button{background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:0;line-height:1}
+    .modal-header button:hover{color:#fff}
+    .modal-crumb{padding:10px 20px;border-bottom:1px solid #1e1e1e;font-family:monospace;font-size:12px;color:#666;background:#141414;word-break:break-all}
+    .modal-list{flex:1;overflow-y:auto;padding:8px}
+    .modal-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:#ccc}
+    .modal-item:hover{background:#222;color:#fff}
+    .modal-item .icon{color:#2563eb;flex-shrink:0;font-size:15px}
+    .modal-item.up .icon{color:#555}
+    .modal-footer{padding:12px 16px;border-top:1px solid #2a2a2a;display:flex;gap:8px;justify-content:flex-end;align-items:center}
+    .modal-footer .sel-path{flex:1;font-family:monospace;font-size:11px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   </style>
 </head>
 <body>
@@ -408,8 +439,9 @@ HTML = """<!DOCTYPE html>
   <div id="deploy-panel" style="display:none;margin-top:16px;padding:16px;background:#141414;border:1px solid #2a2a2a;border-radius:8px">
     <span class="field-label">Project folder path</span>
     <p class="field-help" style="margin-bottom:10px">CLAUDE.md starter → <code>{folder}/CLAUDE.md</code> &nbsp;·&nbsp; DECISIONS.md starter → <code>{folder}/docs/DECISIONS.md</code></p>
-    <div style="display:flex;gap:10px;align-items:flex-start">
+    <div style="display:flex;gap:8px;align-items:flex-start">
       <input type="text" id="deploy-path" placeholder="/home/peyton/repos/my-project" style="flex:1">
+      <button class="sec" onclick="openBrowse()" style="flex-shrink:0;white-space:nowrap">Browse...</button>
       <button onclick="deployTpl()" style="flex-shrink:0;white-space:nowrap">Copy Now</button>
     </div>
     <p class="hint" style="margin-top:8px">The folder must already exist. Subdirectories (like docs/) are created automatically. Existing files are overwritten.</p>
@@ -417,6 +449,23 @@ HTML = """<!DOCTYPE html>
 </section>
 
 </main>
+
+<div class="modal-overlay" id="browse-modal" style="display:none" onclick="if(event.target===this)closeBrowse()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Select Project Folder</h3>
+      <button onclick="closeBrowse()">&#x2715;</button>
+    </div>
+    <div class="modal-crumb" id="browse-crumb">/</div>
+    <div class="modal-list" id="browse-list"></div>
+    <div class="modal-footer">
+      <span class="sel-path" id="browse-sel"></span>
+      <button class="sec" onclick="closeBrowse()">Cancel</button>
+      <button onclick="confirmBrowse()">Select This Folder</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -428,10 +477,10 @@ function nav(id,el){
   document.getElementById(id).classList.add('active');
   el.classList.add('active');
   if(id==='dashboard')loadDash();
-  if(id==='wizard')loadWizard();
-  if(id==='mcp')loadMcp();
-  if(id==='plugins')loadPlugins();
-  if(id==='templates')loadTpl('template-claude');
+  else if(id==='wizard')loadWizard();
+  else if(id==='mcp')loadMcp();
+  else if(id==='plugins')loadPlugins();
+  else if(id==='templates')loadTpl('template-claude');
 }
 
 function toast(msg,err=false){
@@ -621,6 +670,42 @@ async function deployTpl(){
   d.ok?toast('Copied to '+d.path):toast('Error: '+d.error,true);
 }
 
+let browseData={};
+function openBrowse(){
+  document.getElementById('browse-modal').style.display='flex';
+  navigateBrowse('~');
+}
+function closeBrowse(){
+  document.getElementById('browse-modal').style.display='none';
+}
+function confirmBrowse(){
+  const p=browseData.path||'';
+  if(p)document.getElementById('deploy-path').value=p;
+  closeBrowse();
+}
+async function navigateBrowse(path){
+  const d=await api('/api/browse?path='+encodeURIComponent(path));
+  browseData=d;
+  document.getElementById('browse-crumb').textContent=d.path||path;
+  document.getElementById('browse-sel').textContent=d.path||path;
+  const list=document.getElementById('browse-list');
+  if(d.error&&!d.dirs){
+    list.innerHTML='<div style="padding:16px;color:#ef4444;font-size:13px">'+d.error+'</div>';
+    return;
+  }
+  const items=[];
+  if(d.parent)items.push({path:d.parent,label:'.. (up a level)',cls:'up',icon:'&#x2191;'});
+  (d.dirs||[]).forEach(function(name){
+    items.push({path:(d.path==='/'?'':d.path)+'/'+name,label:name,cls:'',icon:'&#x1F4C1;'});
+  });
+  list.innerHTML=items.length
+    ? items.map(function(i){return '<div class="modal-item '+i.cls+'" data-path="'+i.path+'"><span class="icon">'+i.icon+'</span>'+i.label+'</div>';}).join('')
+    : '<div style="padding:16px;color:#444;font-size:13px;text-align:center">No subdirectories</div>';
+  list.querySelectorAll('.modal-item').forEach(function(el){
+    el.addEventListener('click',function(){navigateBrowse(this.dataset.path);});
+  });
+}
+
 loadDash();
 </script>
 </body>
@@ -658,6 +743,10 @@ class ConfigHandler(BaseHTTPRequestHandler):
             self._send_json(get_plugins())
         elif path == "/api/mcp":
             self._send_json(get_mcp_config())
+        elif path == "/api/browse":
+            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            browse_path = qs.get("path", [str(Path.home())])[0]
+            self._send_json(browse_dir(browse_path))
         elif path.startswith("/api/config/"):
             self._send_json(read_config(path[len("/api/config/"):]))
         else:
