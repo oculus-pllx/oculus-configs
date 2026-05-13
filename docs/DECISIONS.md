@@ -68,6 +68,19 @@
 
 ---
 
+## ADR-007: New Project wizard uses subprocess for git/gh, not a Python git library
+
+**Date**: 2026-05-13  
+**Status**: Planned
+
+**Decision**: The New Project wizard will call `git` and optionally `gh` via `subprocess.run()` — no third-party Python git library.
+
+**Why**: No pip available on this system. `git` and `gh` are already present on any developer machine this tool targets. `subprocess.run(["git", "init"], cwd=path)` is readable and sufficient.
+
+**Consequences**: Errors surface as stderr strings rather than typed exceptions. The wizard checks for `gh` with `shutil.which("gh")` before offering GitHub repo creation, degrades gracefully to manual remote URL input if absent.
+
+---
+
 ## Future: Codex CLI configs (codex/) and Gemini CLI configs (gemini/)
 
 **Date**: 2026-05-13  
