@@ -1,0 +1,11 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Windows metadata (WSL artifact)
+*Zone.Identifier
+
+# Secrets (never commit these)
+*.token
+*.secret
+.env

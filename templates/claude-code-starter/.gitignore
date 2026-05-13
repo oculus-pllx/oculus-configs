@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build
+dist/
+build/
+.next/
+out/
+.turbo/
+
+# Environment (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Claude Code — session files (ephemeral, not permanent)
+.claude/HANDOFF.md
+.claude/reports/
+docs/plans/
+docs/analysis/
+
+# Logs
+logs/
+*.log
+
+# Database
+*.sqlite
+*.sqlite3
+dev.db
+
+# Keep permanent docs committed
+!docs/DECISIONS.md
+!docs/API.md
+!docs/ARCHITECTURE.md
+!.env.example
