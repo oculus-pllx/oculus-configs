@@ -364,6 +364,19 @@ def fs_rename(path: str, new_name: str) -> dict:
         return {"ok": False, "error": str(e)}
 
 
+def fs_delete(path: str) -> dict:
+    try:
+        p = Path(path).expanduser().resolve()
+        if _is_protected(p):
+            return {"ok": False, "error": "Cannot delete — protected path"}
+        if not p.exists():
+            return {"ok": False, "error": "Path not found"}
+        shutil.rmtree(p)
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 TEMPLATE_DEST = {
     "template-claude":    "CLAUDE.md",
     "template-decisions": os.path.join("docs", "DECISIONS.md"),

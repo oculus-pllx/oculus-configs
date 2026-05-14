@@ -235,6 +235,30 @@ class TestFsRename(unittest.TestCase):
         self.assertIn("empty", result["error"].lower())
 
 
+class TestFsDelete(unittest.TestCase):
+    def test_delete_success(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "to-delete"
+            target.mkdir()
+            (target / "child.txt").write_text("hi")
+            result = configure.fs_delete(str(target))
+        self.assertTrue(result["ok"])
+        self.assertFalse(target.exists())
+
+    def test_delete_not_found(self):
+        import configure
+        result = configure.fs_delete("/nonexistent/path/that/does/not/exist")
+        self.assertFalse(result["ok"])
+        self.assertIn("not found", result["error"].lower())
+
+    def test_delete_protected(self):
+        import configure
+        result = configure.fs_delete(str(Path.home()))
+        self.assertFalse(result["ok"])
+        self.assertIn("protected", result["error"].lower())
+
+
 class TestHtmlJs(unittest.TestCase):
     def test_js_syntax(self):
         import configure
