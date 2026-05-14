@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import webbrowser
 import threading
+import platform
 import urllib.parse
 
 PORT = 4827
@@ -392,6 +393,36 @@ def fs_move(src: str, dest_parent: str) -> dict:
         return {"ok": True, "path": str(target)}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+def get_repo_path() -> str | None:
+    settings_path = CONFIG_PATHS["settings"]
+    try:
+        data = json.loads(settings_path.read_text()) if settings_path.exists() else {}
+        return data.get("oculus", {}).get("repo_path")
+    except Exception:
+        return None
+
+
+def get_version_info() -> dict:
+    repo = get_repo_path()
+    if not repo:
+        return {"sha": "unknown", "date": "unknown", "message": "repo not configured"}
+    try:
+        r = subprocess.run(
+            ["git", "log", "-1", "--format=%h\t%ai\t%s"],
+            cwd=repo, capture_output=True, text=True, timeout=5
+        )
+        if r.returncode != 0 or not r.stdout.strip():
+            return {"sha": "unknown", "date": "unknown", "message": "git error"}
+        parts = r.stdout.strip().split("\t", 2)
+        return {
+            "sha": parts[0],
+            "date": parts[1][:10] if len(parts) > 1 else "unknown",
+            "message": parts[2] if len(parts) > 2 else "",
+        }
+    except Exception as e:
+        return {"sha": "unknown", "date": "unknown", "message": str(e)}
 
 
 TEMPLATE_DEST = {
@@ -1362,6 +1393,10 @@ class ConfigHandler(BaseHTTPRequestHandler):
             self._send_json(browse_dir(browse_path))
         elif path == "/api/which/gh":
             self._send_json(which_gh())
+        elif path == "/api/update/version":
+            self._send_json(get_version_info())
+        elif path == "/api/update/check":
+            self._send_json(check_update())
         elif path.startswith("/api/config/"):
             self._send_json(read_config(path[len("/api/config/"):]))
         else:

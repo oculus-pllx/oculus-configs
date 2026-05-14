@@ -4,7 +4,7 @@ import json
 import unittest
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -281,6 +281,32 @@ class TestFsMove(unittest.TestCase):
             result = configure.fs_move(str(src), str(dest))
         self.assertFalse(result["ok"])
         self.assertIn("already exists", result["error"])
+
+
+class TestGetRepoPath(unittest.TestCase):
+    def test_returns_path_when_present(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            settings = Path(tmp) / "settings.json"
+            settings.write_text(json.dumps({"oculus": {"repo_path": "/some/repo"}}))
+            with patch.object(configure, "CONFIG_PATHS", {**configure.CONFIG_PATHS, "settings": settings}):
+                result = configure.get_repo_path()
+        self.assertEqual(result, "/some/repo")
+
+    def test_returns_none_when_key_missing(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            settings = Path(tmp) / "settings.json"
+            settings.write_text(json.dumps({}))
+            with patch.object(configure, "CONFIG_PATHS", {**configure.CONFIG_PATHS, "settings": settings}):
+                result = configure.get_repo_path()
+        self.assertIsNone(result)
+
+    def test_returns_none_when_file_absent(self):
+        import configure
+        with patch.object(configure, "CONFIG_PATHS", {**configure.CONFIG_PATHS, "settings": Path("/nonexistent/settings.json")}):
+            result = configure.get_repo_path()
+        self.assertIsNone(result)
 
 
 class TestHtmlJs(unittest.TestCase):
