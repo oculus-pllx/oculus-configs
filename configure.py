@@ -443,6 +443,25 @@ HTML = """<!DOCTYPE html>
     .brand-edit{display:none;margin-top:4px}
     .brand-edit input{margin-bottom:6px;font-size:12px;padding:7px 10px}
     .brand-edit button{padding:6px 12px;font-size:12px;width:100%}
+    .wizard-steps{display:none}
+    .wizard-steps.active{display:block}
+    .step-progress{display:flex;align-items:center;margin-bottom:24px;max-width:400px}
+    .step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;border:2px solid var(--border);color:var(--text-5);background:var(--surface)}
+    .step-dot.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .step-dot.done{background:var(--ok);border-color:var(--ok);color:#fff}
+    .step-line{flex:1;height:2px;background:var(--border)}
+    .step-line.done{background:var(--ok)}
+    .step-actions{display:flex;justify-content:space-between;margin-top:24px}
+    .step-actions.end{justify-content:flex-end}
+    .np-field{margin-bottom:16px}
+    .np-slug{font-size:11px;color:var(--text-5);margin-top:3px;font-family:monospace}
+    .np-radio-group{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .np-radio{padding:6px 14px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-3);background:var(--surface);user-select:none}
+    .np-radio.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .np-check-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:var(--text-2);cursor:pointer}
+    .np-result{background:var(--surface-deep);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:10px;font-family:'Courier New',monospace;font-size:12px;color:var(--code-fg)}
+    .np-err{background:var(--err-border);border:1px solid var(--err);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--err);margin-bottom:12px;line-height:1.5}
+    .np-ok{color:var(--ok);font-weight:600;font-size:15px;margin-bottom:12px}
   </style>
 </head>
 <body>
