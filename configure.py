@@ -37,6 +37,13 @@ TEMPLATE_FILES = {
     "mcp.json":          STARTER_DIR / "mcp.json",
 }
 
+REPO_ROOT = Path(__file__).resolve().parent
+PROTECTED_PATHS = frozenset({Path.home().resolve(), CLAUDE_DIR.resolve(), REPO_ROOT})
+
+
+def _is_protected(path: Path) -> bool:
+    return path.resolve() in PROTECTED_PATHS
+
 
 # ── API functions ─────────────────────────────────────────────────────────────
 
@@ -322,6 +329,22 @@ def remote_project(path: str, remote_url: str) -> dict:
 def open_vscode(path: str) -> dict:
     subprocess.Popen(["code", path])
     return {"ok": True}
+
+
+def fs_mkdir(parent: str, name: str) -> dict:
+    name = (name or "").strip()
+    if not name:
+        return {"ok": False, "error": "Name cannot be empty"}
+    try:
+        p = Path(parent).expanduser().resolve() / name
+        if _is_protected(p.parent):
+            return {"ok": False, "error": "Cannot create folder here — protected path"}
+        if p.exists():
+            return {"ok": False, "error": f"'{name}' already exists"}
+        p.mkdir(parents=False)
+        return {"ok": True, "path": str(p)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 TEMPLATE_DEST = {

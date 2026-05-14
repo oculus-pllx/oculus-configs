@@ -180,6 +180,31 @@ class TestMcpConfig(unittest.TestCase):
             self.assertIn("context7", saved["mcpServers"])
 
 
+class TestFsMkdir(unittest.TestCase):
+    def test_mkdir_success(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            result = configure.fs_mkdir(tmp, "new-folder")
+            self.assertTrue(result["ok"])
+            self.assertTrue(Path(result["path"]).exists())
+            self.assertEqual(Path(result["path"]).name, "new-folder")
+
+    def test_mkdir_already_exists(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "existing").mkdir()
+            result = configure.fs_mkdir(tmp, "existing")
+        self.assertFalse(result["ok"])
+        self.assertIn("already exists", result["error"])
+
+    def test_mkdir_empty_name(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            result = configure.fs_mkdir(tmp, "")
+        self.assertFalse(result["ok"])
+        self.assertIn("empty", result["error"].lower())
+
+
 class TestHtmlJs(unittest.TestCase):
     def test_js_syntax(self):
         import configure
