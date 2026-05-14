@@ -236,6 +236,17 @@ class TestCreateProject(unittest.TestCase):
         self.assertEqual(configure.slugify("ABC 123"), "abc-123")
 
 
+class TestProjectGithub(unittest.TestCase):
+    def test_github_no_gh_in_path(self):
+        import configure
+        with patch("configure.shutil") as mock_shutil:
+            mock_shutil.which.return_value = None
+            with tempfile.TemporaryDirectory() as tmp:
+                result = configure.github_project(tmp, "test-repo", True)
+        self.assertFalse(result["ok"])
+        self.assertIn("error", result)
+
+
 class TestWhichGh(unittest.TestCase):
     def test_returns_gh_and_code_keys(self):
         import configure

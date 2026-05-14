@@ -292,6 +292,38 @@ def create_project(name: str, parent: str, templates: list) -> dict:
         return {"ok": False, "error": str(e)}
 
 
+def github_project(path: str, repo_name: str, private: bool) -> dict:
+    if not shutil.which("gh"):
+        return {"ok": False, "error": "gh CLI not found in PATH"}
+    flag = "--private" if private else "--public"
+    r = subprocess.run(
+        ["gh", "repo", "create", repo_name, flag, "--source", path, "--push"],
+        capture_output=True, text=True
+    )
+    if r.returncode != 0:
+        return {"ok": False, "error": r.stderr.strip() or r.stdout.strip()}
+    remote = subprocess.run(
+        ["git", "remote", "get-url", "origin"], cwd=path, capture_output=True, text=True
+    )
+    return {"ok": True, "clone_url": remote.stdout.strip()}
+
+
+def remote_project(path: str, remote_url: str) -> dict:
+    for cmd in [
+        ["git", "remote", "add", "origin", remote_url],
+        ["git", "push", "-u", "origin", "main"],
+    ]:
+        r = subprocess.run(cmd, cwd=path, capture_output=True, text=True)
+        if r.returncode != 0:
+            return {"ok": False, "error": r.stderr.strip()}
+    return {"ok": True, "clone_url": remote_url}
+
+
+def open_vscode(path: str) -> dict:
+    subprocess.Popen(["code", path])
+    return {"ok": True}
+
+
 TEMPLATE_DEST = {
     "template-claude":    "CLAUDE.md",
     "template-decisions": os.path.join("docs", "DECISIONS.md"),
@@ -911,6 +943,22 @@ class ConfigHandler(BaseHTTPRequestHandler):
                 body.get("parent", ""),
                 body.get("templates", [])
             ))
+        elif path == "/api/projects/github":
+            body = self._read_body()
+            self._send_json(github_project(
+                body.get("path", ""),
+                body.get("repo_name", ""),
+                body.get("private", True)
+            ))
+        elif path == "/api/projects/remote":
+            body = self._read_body()
+            self._send_json(remote_project(
+                body.get("path", ""),
+                body.get("remote_url", "")
+            ))
+        elif path == "/api/projects/open-vscode":
+            body = self._read_body()
+            self._send_json(open_vscode(body.get("path", "")))
         else:
             self._send_json({"error": "Not found"}, 404)
 
