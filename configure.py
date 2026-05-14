@@ -240,13 +240,13 @@ def write_mcp_config(config: dict) -> dict:
         return {"ok": False, "error": str(e)}
 
 
-def browse_dir(path: str) -> dict:
+def browse_dir(path: str, show_hidden: bool = False) -> dict:
     try:
         p = Path(path).expanduser().resolve()
         if not p.exists() or not p.is_dir():
             return {"error": f"Not a directory: {path}"}
         dirs = sorted(
-            [d.name for d in p.iterdir() if d.is_dir() and not d.name.startswith(".")],
+            [d.name for d in p.iterdir() if d.is_dir() and (show_hidden or not d.name.startswith("."))],
             key=str.lower
         )
         parent = str(p.parent) if p.parent != p else None
@@ -887,6 +887,7 @@ HTML = """<!DOCTYPE html>
       <button onclick="closeBrowse()">&#x2715;</button>
     </div>
     <div class="modal-crumb" id="browse-crumb">/</div>
+    <div style="padding:2px 12px 4px;font-size:12px;color:var(--text-5)"><label style="cursor:pointer"><input type="checkbox" id="fm-show-hidden" onchange="fmToggleHidden()"> Show hidden folders</label></div>
     <div id="fm-toolbar" class="fm-toolbar">
       <button class="sec" onclick="fmNewFolder()">+ New Folder</button>
       <button class="sec" id="fm-rename-btn" onclick="fmRename()" disabled>Rename</button>
@@ -1144,7 +1145,7 @@ async function deployTpl(){
 }
 
 let browseData={};let browseCallback=null;
-let fmManagerMode=false;let fmSelected=null;
+let fmManagerMode=false;let fmSelected=null;let fmShowHidden=false;
 
 function openBrowse(cb){
   browseCallback=cb||null;
@@ -1173,7 +1174,7 @@ function confirmBrowse(){
   }else if(p){document.getElementById('deploy-path').value=p;closeBrowse();}
 }
 async function navigateBrowse(path){
-  const d=await api('/api/browse?path='+encodeURIComponent(path));
+  const d=await api('/api/browse?path='+encodeURIComponent(path)+(fmShowHidden?'&show_hidden=1':''));
   browseData=d;
   fmSelected=null;
   fmUpdateButtons();
@@ -1220,6 +1221,17 @@ function fmClearError(){
 function fmShowError(msg){
   const el=document.getElementById('fm-error');el.textContent=msg;el.style.display='block';
 }
+function fmToggleHidden(){
+  fmShowHidden=document.getElementById('fm-show-hidden').checked;
+  navigateBrowse(browseData.path||'~');
+}
+document.addEventListener('keydown',function(e){
+  if(document.getElementById('browse-modal').style.display==='none')return;
+  if(!fmManagerMode)return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.key==='F2'&&fmSelected){e.preventDefault();fmRename();}
+  if(e.key==='Delete'&&fmSelected){e.preventDefault();fmDelete();}
+});
 function fmNewFolder(){
   fmClearError();
   const list=document.getElementById('browse-list');
@@ -1525,7 +1537,8 @@ class ConfigHandler(BaseHTTPRequestHandler):
         elif path == "/api/browse":
             qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             browse_path = qs.get("path", [str(Path.home())])[0]
-            self._send_json(browse_dir(browse_path))
+            show_hidden = qs.get("show_hidden", ["0"])[0] == "1"
+            self._send_json(browse_dir(browse_path, show_hidden))
         elif path == "/api/which/gh":
             self._send_json(which_gh())
         elif path == "/api/update/version":

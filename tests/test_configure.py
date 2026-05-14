@@ -429,6 +429,39 @@ class TestApplyUpdate(unittest.TestCase):
         mock_restart.assert_not_called()
 
 
+class TestBrowseDir(unittest.TestCase):
+    def test_excludes_hidden_by_default(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "visible").mkdir()
+            Path(tmp, ".hidden").mkdir()
+            result = configure.browse_dir(tmp)
+            self.assertIn("visible", result["dirs"])
+            self.assertNotIn(".hidden", result["dirs"])
+
+    def test_includes_hidden_when_flag_set(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "visible").mkdir()
+            Path(tmp, ".hidden").mkdir()
+            result = configure.browse_dir(tmp, show_hidden=True)
+            self.assertIn("visible", result["dirs"])
+            self.assertIn(".hidden", result["dirs"])
+
+    def test_nonexistent_path_returns_error(self):
+        import configure
+        result = configure.browse_dir("/nonexistent/path/xyz")
+        self.assertIn("error", result)
+
+    def test_returns_parent(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            child = Path(tmp, "child")
+            child.mkdir()
+            result = configure.browse_dir(str(child))
+            self.assertEqual(result["parent"], tmp)
+
+
 class TestHtmlJs(unittest.TestCase):
     def test_js_syntax(self):
         import configure
