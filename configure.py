@@ -425,6 +425,35 @@ def get_version_info() -> dict:
         return {"sha": "unknown", "date": "unknown", "message": str(e)}
 
 
+def check_update() -> dict:
+    repo = get_repo_path()
+    if not repo:
+        return {"available": False, "error": "repo not configured — run install.sh again"}
+    if not shutil.which("git"):
+        return {"available": False, "error": "git not found in PATH"}
+    try:
+        r = subprocess.run(
+            ["git", "fetch", "origin"], cwd=repo, capture_output=True, text=True, timeout=15
+        )
+        if r.returncode != 0:
+            return {"available": False, "error": r.stderr.strip() or "git fetch failed"}
+        r = subprocess.run(
+            ["git", "rev-list", "HEAD..origin/main", "--count"],
+            cwd=repo, capture_output=True, text=True, timeout=5
+        )
+        count = int(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip().isdigit() else 0
+        r2 = subprocess.run(
+            ["git", "rev-parse", "--short", "origin/main"],
+            cwd=repo, capture_output=True, text=True, timeout=5
+        )
+        latest = r2.stdout.strip() if r2.returncode == 0 else "unknown"
+        return {"available": count > 0, "commits": count, "latest": latest}
+    except subprocess.TimeoutExpired:
+        return {"available": False, "error": "git fetch timed out"}
+    except Exception as e:
+        return {"available": False, "error": str(e)}
+
+
 TEMPLATE_DEST = {
     "template-claude":    "CLAUDE.md",
     "template-decisions": os.path.join("docs", "DECISIONS.md"),

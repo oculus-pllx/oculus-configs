@@ -309,6 +309,52 @@ class TestGetRepoPath(unittest.TestCase):
         self.assertIsNone(result)
 
 
+class TestCheckUpdate(unittest.TestCase):
+    def test_no_repo_path_returns_error(self):
+        import configure
+        with patch.object(configure, "get_repo_path", return_value=None):
+            result = configure.check_update()
+        self.assertFalse(result["available"])
+        self.assertIn("error", result)
+
+    def test_git_not_found_returns_error(self):
+        import configure
+        with patch.object(configure, "get_repo_path", return_value="/repo"):
+            with patch("configure.shutil.which", return_value=None):
+                result = configure.check_update()
+        self.assertFalse(result["available"])
+        self.assertIn("error", result)
+
+    def test_up_to_date(self):
+        import configure
+        with patch.object(configure, "get_repo_path", return_value="/repo"):
+            with patch("configure.shutil.which", return_value="/usr/bin/git"):
+                with patch("configure.subprocess.run") as mock_run:
+                    mock_run.side_effect = [
+                        MagicMock(returncode=0, stdout="", stderr=""),
+                        MagicMock(returncode=0, stdout="0\n", stderr=""),
+                        MagicMock(returncode=0, stdout="abc1234\n", stderr=""),
+                    ]
+                    result = configure.check_update()
+        self.assertFalse(result["available"])
+        self.assertEqual(result["commits"], 0)
+
+    def test_commits_available(self):
+        import configure
+        with patch.object(configure, "get_repo_path", return_value="/repo"):
+            with patch("configure.shutil.which", return_value="/usr/bin/git"):
+                with patch("configure.subprocess.run") as mock_run:
+                    mock_run.side_effect = [
+                        MagicMock(returncode=0, stdout="", stderr=""),
+                        MagicMock(returncode=0, stdout="3\n", stderr=""),
+                        MagicMock(returncode=0, stdout="abc1234\n", stderr=""),
+                    ]
+                    result = configure.check_update()
+        self.assertTrue(result["available"])
+        self.assertEqual(result["commits"], 3)
+        self.assertEqual(result["latest"], "abc1234")
+
+
 class TestHtmlJs(unittest.TestCase):
     def test_js_syntax(self):
         import configure
