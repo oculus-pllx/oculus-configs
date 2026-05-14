@@ -1,6 +1,9 @@
 # Session bridges (ephemeral, never commit)
 HANDOFF.md
 
+# Visual brainstorming companion artifacts
+.superpowers/
+
 # Python
 __pycache__/
 *.pyc
