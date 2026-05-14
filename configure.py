@@ -377,6 +377,23 @@ def fs_delete(path: str) -> dict:
         return {"ok": False, "error": str(e)}
 
 
+def fs_move(src: str, dest_parent: str) -> dict:
+    try:
+        s = Path(src).expanduser().resolve()
+        d = Path(dest_parent).expanduser().resolve()
+        if _is_protected(s):
+            return {"ok": False, "error": "Cannot move — protected path"}
+        if s == d:
+            return {"ok": False, "error": "Source and destination are the same"}
+        target = d / s.name
+        if target.exists():
+            return {"ok": False, "error": f"'{s.name}' already exists in destination"}
+        shutil.move(str(s), str(target))
+        return {"ok": True, "path": str(target)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 TEMPLATE_DEST = {
     "template-claude":    "CLAUDE.md",
     "template-decisions": os.path.join("docs", "DECISIONS.md"),
@@ -1246,6 +1263,18 @@ class ConfigHandler(BaseHTTPRequestHandler):
         elif path == "/api/projects/open-vscode":
             body = self._read_body()
             self._send_json(open_vscode(body.get("path", "")))
+        elif path == "/api/fs/mkdir":
+            body = self._read_body()
+            self._send_json(fs_mkdir(body.get("parent", ""), body.get("name", "")))
+        elif path == "/api/fs/rename":
+            body = self._read_body()
+            self._send_json(fs_rename(body.get("path", ""), body.get("new_name", "")))
+        elif path == "/api/fs/delete":
+            body = self._read_body()
+            self._send_json(fs_delete(body.get("path", "")))
+        elif path == "/api/fs/move":
+            body = self._read_body()
+            self._send_json(fs_move(body.get("src", ""), body.get("dest", "")))
         else:
             self._send_json({"error": "Not found"}, 404)
 

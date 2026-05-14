@@ -259,6 +259,30 @@ class TestFsDelete(unittest.TestCase):
         self.assertIn("protected", result["error"].lower())
 
 
+class TestFsMove(unittest.TestCase):
+    def test_move_success(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "src-folder"
+            dest = Path(tmp) / "dest-parent"
+            src.mkdir(); dest.mkdir()
+            result = configure.fs_move(str(src), str(dest))
+            self.assertTrue(result["ok"])
+            self.assertTrue(Path(tmp, "dest-parent", "src-folder").exists())
+            self.assertFalse(src.exists())
+
+    def test_move_name_conflict(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "my-folder"
+            dest = Path(tmp) / "dest"
+            conflict = dest / "my-folder"
+            src.mkdir(); dest.mkdir(); conflict.mkdir()
+            result = configure.fs_move(str(src), str(dest))
+        self.assertFalse(result["ok"])
+        self.assertIn("already exists", result["error"])
+
+
 class TestHtmlJs(unittest.TestCase):
     def test_js_syntax(self):
         import configure
