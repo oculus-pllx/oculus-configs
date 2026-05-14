@@ -1018,23 +1018,40 @@ async function deployTpl(){
 }
 
 let browseData={};let browseCallback=null;
+let fmManagerMode=false;let fmSelected=null;
+
 function openBrowse(cb){
   browseCallback=cb||null;
+  fmManagerMode=!cb;
+  fmSelected=null;
+  document.getElementById('browse-title').textContent=fmManagerMode?'File Manager':'Select Project Folder';
+  document.getElementById('fm-toolbar').classList.toggle('active',fmManagerMode);
+  document.getElementById('browse-select-btn').style.display=fmManagerMode?'none':'';
+  document.getElementById('browse-select-btn').textContent='Select This Folder';
+  fmClearError();
+  fmUpdateButtons();
   document.getElementById('browse-modal').style.display='flex';
   navigateBrowse('~');
 }
 function closeBrowse(){
   document.getElementById('browse-modal').style.display='none';
+  browseCallback=null;
+  fmManagerMode=false;
+  fmSelected=null;
 }
 function confirmBrowse(){
   const p=browseData.path||'';
-  if(browseCallback){browseCallback(p);browseCallback=null;}
-  else if(p){document.getElementById('deploy-path').value=p;}
-  closeBrowse();
+  if(browseCallback){
+    const cb=browseCallback;browseCallback=null;cb(p);
+    if(!fmManagerMode)closeBrowse();
+  }else if(p){document.getElementById('deploy-path').value=p;closeBrowse();}
 }
 async function navigateBrowse(path){
   const d=await api('/api/browse?path='+encodeURIComponent(path));
   browseData=d;
+  fmSelected=null;
+  fmUpdateButtons();
+  fmClearError();
   document.getElementById('browse-crumb').textContent=d.path||path;
   document.getElementById('browse-sel').textContent=d.path||path;
   const list=document.getElementById('browse-list');
@@ -1051,8 +1068,100 @@ async function navigateBrowse(path){
     ? items.map(function(i){return '<div class="modal-item '+i.cls+'" data-path="'+i.path+'"><span class="icon">'+i.icon+'</span>'+i.label+'</div>';}).join('')
     : '<div style="padding:16px;color:#444;font-size:13px;text-align:center">No subdirectories</div>';
   list.querySelectorAll('.modal-item').forEach(function(el){
-    el.addEventListener('click',function(){navigateBrowse(this.dataset.path);});
+    if(fmManagerMode&&!el.classList.contains('up')){
+      el.addEventListener('click',function(){
+        list.querySelectorAll('.modal-item').forEach(function(x){x.classList.remove('fm-item-sel');});
+        el.classList.add('fm-item-sel');
+        fmSelected=el.dataset.path;
+        document.getElementById('browse-sel').textContent=fmSelected;
+        fmUpdateButtons();
+      });
+      el.addEventListener('dblclick',function(){navigateBrowse(el.dataset.path);});
+    }else{
+      el.addEventListener('click',function(){navigateBrowse(this.dataset.path);});
+    }
   });
+}
+function fmUpdateButtons(){
+  const has=!!fmSelected;
+  ['fm-rename-btn','fm-delete-btn','fm-move-btn'].forEach(function(id){
+    document.getElementById(id).disabled=!has;
+  });
+}
+function fmClearError(){
+  const el=document.getElementById('fm-error');el.style.display='none';el.innerHTML='';
+}
+function fmShowError(msg){
+  const el=document.getElementById('fm-error');el.textContent=msg;el.style.display='block';
+}
+function fmNewFolder(){
+  fmClearError();
+  const list=document.getElementById('browse-list');
+  const old=list.querySelector('.fm-inline');if(old)old.remove();
+  const row=document.createElement('div');
+  row.className='modal-item fm-inline';
+  row.innerHTML='<span class="icon">&#x1F4C1;</span><input type="text" placeholder="folder-name" style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--accent);color:var(--text);outline:none;font-size:13px">';
+  list.insertBefore(row,list.firstChild);
+  const inp=row.querySelector('input');inp.focus();
+  inp.addEventListener('keydown',async function(e){
+    if(e.key==='Enter'){
+      const r=await api('/api/fs/mkdir','POST',{parent:browseData.path,name:inp.value});
+      if(r.ok)navigateBrowse(browseData.path);else fmShowError(r.error);
+    }else if(e.key==='Escape'){row.remove();}
+  });
+}
+async function fmRename(){
+  if(!fmSelected)return;fmClearError();
+  const list=document.getElementById('browse-list');
+  const el=list.querySelector('[data-path="'+fmSelected+'"]');
+  if(!el)return;
+  const oldName=fmSelected.split('/').pop();
+  el.innerHTML='<span class="icon">&#x1F4C1;</span><input type="text" value="'+oldName+'" style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--accent);color:var(--text);outline:none;font-size:13px">';
+  const inp=el.querySelector('input');inp.focus();inp.select();
+  inp.addEventListener('keydown',async function(e){
+    if(e.key==='Enter'){
+      const r=await api('/api/fs/rename','POST',{path:fmSelected,new_name:inp.value.trim()});
+      if(r.ok){fmSelected=null;navigateBrowse(browseData.path);}else fmShowError(r.error);
+    }else if(e.key==='Escape'){navigateBrowse(browseData.path);}
+  });
+}
+function fmDelete(){
+  if(!fmSelected)return;fmClearError();
+  const name=fmSelected.split('/').pop();
+  const el=document.getElementById('fm-error');el.style.display='block';
+  el.innerHTML='Delete <strong>'+name+'</strong> and all contents? Type <code>delete</code> to confirm: '
+    +'<input id="fm-del-inp" style="width:72px;margin:0 6px;padding:2px 4px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:3px">'
+    +'<button style="font-size:12px;padding:2px 8px;margin-left:2px" onclick="fmConfirmDelete()">OK</button>'
+    +'<button class="sec" style="font-size:12px;padding:2px 8px;margin-left:4px" onclick="fmClearError()">Cancel</button>';
+  document.getElementById('fm-del-inp').focus();
+}
+async function fmConfirmDelete(){
+  const inp=document.getElementById('fm-del-inp');
+  if(!inp||inp.value!=='delete'){fmShowError('Type "delete" to confirm');return;}
+  const r=await api('/api/fs/delete','POST',{path:fmSelected});
+  if(r.ok){fmSelected=null;navigateBrowse(browseData.path);}else fmShowError(r.error);
+}
+function fmMove(){
+  if(!fmSelected)return;fmClearError();
+  const src=fmSelected;
+  const srcName=src.split('/').pop();
+  fmManagerMode=false;
+  document.getElementById('browse-title').textContent='Move "'+srcName+'" — select destination';
+  document.getElementById('fm-toolbar').classList.remove('active');
+  document.getElementById('browse-select-btn').style.display='';
+  document.getElementById('browse-select-btn').textContent='Move Here';
+  browseCallback=function(dest){
+    fmManagerMode=true;fmSelected=null;
+    document.getElementById('browse-title').textContent='File Manager';
+    document.getElementById('fm-toolbar').classList.add('active');
+    document.getElementById('browse-select-btn').style.display='none';
+    document.getElementById('browse-select-btn').textContent='Select This Folder';
+    fmUpdateButtons();
+    api('/api/fs/move','POST',{src,dest}).then(function(r){
+      navigateBrowse(browseData.path);
+      if(!r.ok)fmShowError(r.error);
+    });
+  };
 }
 
 let wizardState={};
