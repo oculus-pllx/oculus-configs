@@ -543,7 +543,7 @@ HTML = """<!DOCTYPE html>
 <nav>
   <h1>oculus-configs</h1>
   <a onclick="nav('dashboard',this)" class="active">Dashboard</a>
-  <a onclick="nav('newproject',this)">New Project</a>
+  <a onclick="nav('newproject',this)">Project Commander</a>
   <a onclick="nav('wizard',this)">CLAUDE.md</a>
   <a onclick="nav('mcp',this)">MCP Setup</a>
   <a onclick="nav('plugins',this)">Plugins</a>
@@ -673,82 +673,97 @@ HTML = """<!DOCTYPE html>
 </section>
 
 <section id="newproject">
-  <h2>New Project</h2>
-  <p class="section-desc">Scaffold a new project — folder, starter files, <code>git init</code>, and optional GitHub remote — without leaving the browser.</p>
-  <div class="step-progress">
-    <div class="step-dot active" id="np-dot-1">1</div>
-    <div class="step-line" id="np-line-1"></div>
-    <div class="step-dot" id="np-dot-2">2</div>
-    <div class="step-line" id="np-line-2"></div>
-    <div class="step-dot" id="np-dot-3">3</div>
-    <div class="step-line" id="np-line-3"></div>
-    <div class="step-dot" id="np-dot-4">4</div>
-  </div>
-  <div class="wizard-steps active" id="np-step-1">
-    <div class="np-field">
-      <label class="field-label">Project Name</label>
-      <input type="text" id="np-name" placeholder="my-new-project" oninput="npUpdateSlug();npValidate1()" style="max-width:400px">
-      <div class="np-slug" id="np-slug">&#x2192; my-new-project/</div>
+  <h2>Project Commander</h2>
+  <p class="section-desc">Create new projects or manage existing folders — rename, delete, move, and create directories anywhere on your machine.</p>
+  <div id="pc-home" style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
+    <div class="card" style="flex:1;min-width:200px;cursor:pointer" onclick="pcShowCreate()">
+      <div class="val" style="font-size:28px">&#x2795;</div>
+      <div class="label">Create New Project</div>
+      <p style="font-size:12px;color:var(--text-2);margin:8px 0 0">Scaffold a folder with starter files, git&nbsp;init, and optional GitHub remote</p>
     </div>
-    <div class="np-field">
-      <label class="field-label">Parent Folder</label>
-      <div style="display:flex;gap:8px;max-width:400px">
-        <input type="text" id="np-parent" placeholder="/home/user/projects" style="flex:1" oninput="npValidate1()">
-        <button class="sec" onclick="openBrowse(function(p){document.getElementById('np-parent').value=p;npValidate1();})" style="flex-shrink:0;white-space:nowrap">Browse...</button>
+    <div class="card" style="flex:1;min-width:200px;cursor:pointer" onclick="openBrowse()">
+      <div class="val" style="font-size:28px">&#x1F5C2;</div>
+      <div class="label">Manage Existing</div>
+      <p style="font-size:12px;color:var(--text-2);margin:8px 0 0">Rename, delete, move, or create folders in any directory</p>
+    </div>
+  </div>
+  <div id="pc-create-panel" style="display:none">
+    <button class="sec" onclick="loadNewProject()" style="margin:12px 0;font-size:12px">&#x2190; Back to Project Commander</button>
+    <div class="step-progress">
+      <div class="step-dot active" id="np-dot-1">1</div>
+      <div class="step-line" id="np-line-1"></div>
+      <div class="step-dot" id="np-dot-2">2</div>
+      <div class="step-line" id="np-line-2"></div>
+      <div class="step-dot" id="np-dot-3">3</div>
+      <div class="step-line" id="np-line-3"></div>
+      <div class="step-dot" id="np-dot-4">4</div>
+    </div>
+    <div class="wizard-steps active" id="np-step-1">
+      <div class="np-field">
+        <label class="field-label">Project Name</label>
+        <input type="text" id="np-name" placeholder="my-new-project" oninput="npUpdateSlug();npValidate1()" style="max-width:400px">
+        <div class="np-slug" id="np-slug">&#x2192; my-new-project/</div>
       </div>
-    </div>
-    <div class="step-actions end" style="max-width:400px">
-      <button id="np-next-1" onclick="showStep(2)" disabled>Next &#x2192;</button>
-    </div>
-  </div>
-  <div class="wizard-steps" id="np-step-2">
-    <p class="section-desc" style="margin-bottom:16px">Choose which starter files to copy into your new project.</p>
-    <label class="np-check-row"><input type="checkbox" id="np-tpl-claude" checked style="width:auto"> CLAUDE.md</label>
-    <label class="np-check-row"><input type="checkbox" id="np-tpl-decisions" checked style="width:auto"> docs/DECISIONS.md</label>
-    <label class="np-check-row"><input type="checkbox" id="np-tpl-gitignore" checked style="width:auto"> .gitignore</label>
-    <label class="np-check-row"><input type="checkbox" id="np-tpl-mcp" style="width:auto"> mcp.json</label>
-    <div class="step-actions" style="max-width:400px">
-      <button class="sec" onclick="showStep(1)">&#x2190; Back</button>
-      <button onclick="showStep(3)">Next &#x2192;</button>
-    </div>
-  </div>
-  <div class="wizard-steps" id="np-step-3">
-    <p class="section-desc" style="margin-bottom:12px"><code>git init</code> and an "Initial commit" run automatically. Optionally connect a GitHub remote.</p>
-    <div class="np-field">
-      <label class="field-label">GitHub Remote (optional)</label>
-      <div class="np-radio-group" id="np-remote-opts"></div>
-      <div id="np-gh-vis-opts" style="display:none;margin-bottom:10px">
-        <label class="field-label">Visibility</label>
-        <div class="np-radio-group">
-          <div class="np-radio active" id="np-vis-private" onclick="npSelectVis('private')">&#x25CF; Private</div>
-          <div class="np-radio" id="np-vis-public" onclick="npSelectVis('public')">&#x25CB; Public</div>
+      <div class="np-field">
+        <label class="field-label">Parent Folder</label>
+        <div style="display:flex;gap:8px;max-width:400px">
+          <input type="text" id="np-parent" placeholder="/home/user/projects" style="flex:1" oninput="npValidate1()">
+          <button class="sec" onclick="openBrowse(function(p){document.getElementById('np-parent').value=p;npValidate1();})" style="flex-shrink:0;white-space:nowrap">Browse...</button>
         </div>
       </div>
-      <div id="np-url-field" style="display:none;max-width:400px">
-        <input type="text" id="np-remote-url" placeholder="git@github.com:user/repo.git">
+      <div class="step-actions end" style="max-width:400px">
+        <button id="np-next-1" onclick="showStep(2)" disabled>Next &#x2192;</button>
       </div>
     </div>
-    <div id="np-create-err" class="np-err" style="display:none"></div>
-    <div class="step-actions" style="max-width:400px">
-      <button class="sec" onclick="showStep(2)">&#x2190; Back</button>
-      <button id="np-create-btn" onclick="npCreate()">Create Project</button>
-    </div>
-  </div>
-  <div class="wizard-steps" id="np-step-4">
-    <div class="np-ok">&#x2713; Project created!</div>
-    <div class="np-result" id="np-path-display"></div>
-    <div class="np-result" id="np-log-display" style="color:var(--text-5)"></div>
-    <div id="np-clone-section" style="display:none;margin-bottom:16px;max-width:500px">
-      <label class="field-label">Clone URL</label>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="np-clone-url" style="flex:1;font-family:monospace;font-size:12px" readonly>
-        <button class="sec" onclick="navigator.clipboard.writeText(document.getElementById('np-clone-url').value).then(()=>toast('Copied!'))" style="flex-shrink:0">Copy</button>
+    <div class="wizard-steps" id="np-step-2">
+      <p class="section-desc" style="margin-bottom:16px">Choose which starter files to copy into your new project.</p>
+      <label class="np-check-row"><input type="checkbox" id="np-tpl-claude" checked style="width:auto"> CLAUDE.md</label>
+      <label class="np-check-row"><input type="checkbox" id="np-tpl-decisions" checked style="width:auto"> docs/DECISIONS.md</label>
+      <label class="np-check-row"><input type="checkbox" id="np-tpl-gitignore" checked style="width:auto"> .gitignore</label>
+      <label class="np-check-row"><input type="checkbox" id="np-tpl-mcp" style="width:auto"> mcp.json</label>
+      <div class="step-actions" style="max-width:400px">
+        <button class="sec" onclick="showStep(1)">&#x2190; Back</button>
+        <button onclick="showStep(3)">Next &#x2192;</button>
       </div>
     </div>
-    <div id="np-git-err" class="np-err" style="display:none"></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-      <button id="np-vscode-btn" style="display:none" onclick="npOpenVscode()">&#x2317; Open in VS Code</button>
-      <button class="sec" onclick="npReset()">+ New Project</button>
+    <div class="wizard-steps" id="np-step-3">
+      <p class="section-desc" style="margin-bottom:12px"><code>git init</code> and an "Initial commit" run automatically. Optionally connect a GitHub remote.</p>
+      <div class="np-field">
+        <label class="field-label">GitHub Remote (optional)</label>
+        <div class="np-radio-group" id="np-remote-opts"></div>
+        <div id="np-gh-vis-opts" style="display:none;margin-bottom:10px">
+          <label class="field-label">Visibility</label>
+          <div class="np-radio-group">
+            <div class="np-radio active" id="np-vis-private" onclick="npSelectVis('private')">&#x25CF; Private</div>
+            <div class="np-radio" id="np-vis-public" onclick="npSelectVis('public')">&#x25CB; Public</div>
+          </div>
+        </div>
+        <div id="np-url-field" style="display:none;max-width:400px">
+          <input type="text" id="np-remote-url" placeholder="git@github.com:user/repo.git">
+        </div>
+      </div>
+      <div id="np-create-err" class="np-err" style="display:none"></div>
+      <div class="step-actions" style="max-width:400px">
+        <button class="sec" onclick="showStep(2)">&#x2190; Back</button>
+        <button id="np-create-btn" onclick="npCreate()">Create Project</button>
+      </div>
+    </div>
+    <div class="wizard-steps" id="np-step-4">
+      <div class="np-ok">&#x2713; Project created!</div>
+      <div class="np-result" id="np-path-display"></div>
+      <div class="np-result" id="np-log-display" style="color:var(--text-5)"></div>
+      <div id="np-clone-section" style="display:none;margin-bottom:16px;max-width:500px">
+        <label class="field-label">Clone URL</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="np-clone-url" style="flex:1;font-family:monospace;font-size:12px" readonly>
+          <button class="sec" onclick="navigator.clipboard.writeText(document.getElementById('np-clone-url').value).then(()=>toast('Copied!'))" style="flex-shrink:0">Copy</button>
+        </div>
+      </div>
+      <div id="np-git-err" class="np-err" style="display:none"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <button id="np-vscode-btn" style="display:none" onclick="npOpenVscode()">&#x2317; Open in VS Code</button>
+        <button class="sec" onclick="loadNewProject()">&#x2190; Project Commander</button>
+      </div>
     </div>
   </div>
 </section>
@@ -1179,11 +1194,18 @@ function showStep(n){
 }
 
 async function loadNewProject(){
+  document.getElementById('pc-home').style.display='flex';
+  document.getElementById('pc-create-panel').style.display='none';
   if(!wizardState.caps){
     wizardState.caps=await api('/api/which/gh');
     wizardState.visibility='private';
     npBuildRemoteOpts();
   }
+}
+function pcShowCreate(){
+  document.getElementById('pc-home').style.display='none';
+  document.getElementById('pc-create-panel').style.display='block';
+  npReset();
 }
 
 function npBuildRemoteOpts(){
@@ -1289,8 +1311,7 @@ function npReset(){
   document.getElementById('np-clone-section').style.display='none';
   document.getElementById('np-git-err').style.display='none';
   document.getElementById('np-vscode-btn').style.display='none';
-  npSelectRemote(wizardState.caps.gh?'gh':'skip');
-  npSelectVis('private');
+  if(wizardState.caps){npSelectRemote(wizardState.caps.gh?'gh':'skip');npSelectVis('private');}
   showStep(1);
 }
 
