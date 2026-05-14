@@ -199,5 +199,23 @@ class TestHtmlJs(unittest.TestCase):
             Path(name).unlink(missing_ok=True)
 
 
+class TestWhichGh(unittest.TestCase):
+    def test_returns_gh_and_code_keys(self):
+        import configure
+        result = configure.which_gh()
+        self.assertIn("gh", result)
+        self.assertIn("code", result)
+        self.assertIsInstance(result["gh"], bool)
+        self.assertIsInstance(result["code"], bool)
+
+    def test_gh_false_when_not_in_path(self):
+        import configure
+        with patch("configure.shutil") as mock_shutil:
+            mock_shutil.which.return_value = None
+            result = configure.which_gh()
+        self.assertFalse(result["gh"])
+        self.assertFalse(result["code"])
+
+
 if __name__ == "__main__":
     unittest.main()

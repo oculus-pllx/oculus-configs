@@ -2,6 +2,9 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 import json
 import os
+import re
+import shutil
+import subprocess
 import webbrowser
 import threading
 import urllib.parse
@@ -236,6 +239,13 @@ def browse_dir(path: str) -> dict:
         return {"error": "Permission denied", "path": path, "dirs": [], "parent": str(Path(path).parent)}
     except Exception as e:
         return {"error": str(e)}
+
+
+def which_gh() -> dict:
+    return {
+        "gh": shutil.which("gh") is not None,
+        "code": shutil.which("code") is not None,
+    }
 
 
 TEMPLATE_DEST = {
@@ -828,6 +838,8 @@ class ConfigHandler(BaseHTTPRequestHandler):
             qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             browse_path = qs.get("path", [str(Path.home())])[0]
             self._send_json(browse_dir(browse_path))
+        elif path == "/api/which/gh":
+            self._send_json(which_gh())
         elif path.startswith("/api/config/"):
             self._send_json(read_config(path[len("/api/config/"):]))
         else:
