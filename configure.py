@@ -973,6 +973,136 @@ async function navigateBrowse(path){
   });
 }
 
+let wizardState={};
+
+function showStep(n){
+  document.querySelectorAll('.wizard-steps').forEach(s=>s.classList.remove('active'));
+  document.getElementById('np-step-'+n).classList.add('active');
+  for(let i=1;i<=4;i++){
+    const dot=document.getElementById('np-dot-'+i);
+    const line=i<4?document.getElementById('np-line-'+i):null;
+    if(i<n){dot.className='step-dot done';dot.textContent='\u2713';if(line)line.className='step-line done';}
+    else if(i===n){dot.className='step-dot active';dot.textContent=String(i);if(line)line.className='step-line';}
+    else{dot.className='step-dot';dot.textContent=String(i);if(line)line.className='step-line';}
+  }
+}
+
+async function loadNewProject(){
+  if(!wizardState.caps){
+    wizardState.caps=await api('/api/which/gh');
+    wizardState.visibility='private';
+    npBuildRemoteOpts();
+  }
+}
+
+function npBuildRemoteOpts(){
+  const opts=document.getElementById('np-remote-opts');
+  opts.innerHTML='';
+  if(wizardState.caps.gh){
+    const ghBtn=document.createElement('div');
+    ghBtn.className='np-radio';ghBtn.id='np-opt-gh';ghBtn.textContent='\u25cf gh create';
+    ghBtn.onclick=()=>npSelectRemote('gh');
+    opts.appendChild(ghBtn);
+  }
+  const urlBtn=document.createElement('div');
+  urlBtn.className='np-radio';urlBtn.id='np-opt-url';urlBtn.textContent='\u25cb Manual URL';
+  urlBtn.onclick=()=>npSelectRemote('url');
+  opts.appendChild(urlBtn);
+  const skipBtn=document.createElement('div');
+  skipBtn.className='np-radio';skipBtn.id='np-opt-skip';skipBtn.textContent='\u25cb Skip';
+  skipBtn.onclick=()=>npSelectRemote('skip');
+  opts.appendChild(skipBtn);
+  npSelectRemote(wizardState.caps.gh?'gh':'skip');
+}
+
+function npSelectRemote(mode){
+  wizardState.remoteMode=mode;
+  ['gh','url','skip'].forEach(id=>{
+    const el=document.getElementById('np-opt-'+id);
+    if(el)el.className='np-radio'+(id===mode?' active':'');
+  });
+  document.getElementById('np-gh-vis-opts').style.display=mode==='gh'?'block':'none';
+  document.getElementById('np-url-field').style.display=mode==='url'?'block':'none';
+}
+
+function npSelectVis(vis){
+  wizardState.visibility=vis;
+  document.getElementById('np-vis-private').className='np-radio'+(vis==='private'?' active':'');
+  document.getElementById('np-vis-public').className='np-radio'+(vis==='public'?' active':'');
+}
+
+function npUpdateSlug(){
+  const name=document.getElementById('np-name').value;
+  const slug=name.toLowerCase().replace(/[^a-z0-9-]/g,'-');
+  wizardState.slug=slug;
+  document.getElementById('np-slug').textContent='\u2192 '+(slug||'my-new-project')+'/';
+}
+
+function npValidate1(){
+  const name=document.getElementById('np-name').value.trim();
+  const parent=document.getElementById('np-parent').value.trim();
+  document.getElementById('np-next-1').disabled=!(name&&parent);
+}
+
+async function npCreate(){
+  document.getElementById('np-create-err').style.display='none';
+  const name=document.getElementById('np-name').value.trim();
+  const parent=document.getElementById('np-parent').value.trim();
+  const templates=[];
+  if(document.getElementById('np-tpl-claude').checked)templates.push('CLAUDE.md');
+  if(document.getElementById('np-tpl-decisions').checked)templates.push('docs/DECISIONS.md');
+  if(document.getElementById('np-tpl-gitignore').checked)templates.push('.gitignore');
+  if(document.getElementById('np-tpl-mcp').checked)templates.push('mcp.json');
+  const btn=document.getElementById('np-create-btn');
+  btn.disabled=true;btn.textContent='Creating...';
+  const result=await api('/api/projects/create','POST',{name,parent,templates});
+  if(!result.ok){
+    document.getElementById('np-create-err').textContent=result.error;
+    document.getElementById('np-create-err').style.display='block';
+    btn.disabled=false;btn.textContent='Create Project';
+    return;
+  }
+  wizardState.createdPath=result.path;
+  let cloneUrl='';let ghErr='';
+  if(wizardState.remoteMode==='gh'){
+    const gr=await api('/api/projects/github','POST',{path:result.path,repo_name:wizardState.slug,private:wizardState.visibility!=='public'});
+    if(gr.ok)cloneUrl=gr.clone_url;else ghErr=gr.error;
+  } else if(wizardState.remoteMode==='url'){
+    const ru=document.getElementById('np-remote-url').value.trim();
+    if(ru){const rr=await api('/api/projects/remote','POST',{path:result.path,remote_url:ru});if(rr.ok)cloneUrl=rr.clone_url;else ghErr=rr.error;}
+  }
+  showStep(4);
+  document.getElementById('np-path-display').textContent=result.path;
+  document.getElementById('np-log-display').textContent=result.git_log;
+  if(cloneUrl){document.getElementById('np-clone-url').value=cloneUrl;document.getElementById('np-clone-section').style.display='block';}
+  if(ghErr){document.getElementById('np-git-err').textContent='GitHub: '+ghErr;document.getElementById('np-git-err').style.display='block';}
+  if(wizardState.caps.code)document.getElementById('np-vscode-btn').style.display='inline-block';
+  btn.disabled=false;btn.textContent='Create Project';
+}
+
+async function npOpenVscode(){
+  await api('/api/projects/open-vscode','POST',{path:wizardState.createdPath});
+}
+
+function npReset(){
+  wizardState={caps:wizardState.caps,visibility:'private'};
+  document.getElementById('np-name').value='';
+  document.getElementById('np-slug').textContent='\u2192 my-new-project/';
+  document.getElementById('np-parent').value='';
+  document.getElementById('np-next-1').disabled=true;
+  document.getElementById('np-tpl-claude').checked=true;
+  document.getElementById('np-tpl-decisions').checked=true;
+  document.getElementById('np-tpl-gitignore').checked=true;
+  document.getElementById('np-tpl-mcp').checked=false;
+  document.getElementById('np-create-err').style.display='none';
+  document.getElementById('np-clone-section').style.display='none';
+  document.getElementById('np-git-err').style.display='none';
+  document.getElementById('np-vscode-btn').style.display='none';
+  npSelectRemote(wizardState.caps.gh?'gh':'skip');
+  npSelectVis('private');
+  showStep(1);
+}
+
 (function(){var t=localStorage.getItem('theme');if(t==='light'){document.body.classList.add('light');document.getElementById('theme-btn').textContent='\u263d';}})();
 loadBranding();
 loadDash();
