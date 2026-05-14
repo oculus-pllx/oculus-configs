@@ -671,6 +671,11 @@ HTML = """<!DOCTYPE html>
   <h2>Config Status <span class="scope-badge global">global</span></h2>
   <p class="section-desc">Health of your global Claude Code config in <strong>~/.claude/</strong>. These settings apply to <strong>every project</strong> on this machine. Project-specific rules live in a <code>CLAUDE.md</code> inside each project folder.</p>
   <div class="status-grid" id="status-grid"><div class="card"><div class="val">Loading...</div></div></div>
+  <div id="update-card" class="card" style="margin-top:16px;max-width:480px">
+    <div class="lbl">oculus-configs</div>
+    <div class="val" id="update-val"><span class="dot"></span> Checking for updates...</div>
+    <div id="update-actions" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
 </section>
 
 <section id="wizard">
@@ -971,6 +976,7 @@ async function loadDash(){
       ${i.fix?`<div class="fix">${i.fix}</div>`:''}
     </div>`
   ).join('');
+  loadUpdateCard();
 }
 
 function switchWizardMode(mode,el){
@@ -1419,6 +1425,61 @@ function npReset(){
   showStep(1);
 }
 
+async function loadUpdateCard(){
+  const val=document.getElementById('update-val');
+  const actions=document.getElementById('update-actions');
+  val.innerHTML='<span class="dot"></span> Checking...';
+  actions.innerHTML='';
+  const v=await api('/api/update/version');
+  const ver=v.sha!=='unknown'?`${v.sha} \u00b7 ${v.date}`:'version unknown';
+  const d=await api('/api/update/check');
+  if(d.error&&!d.available){
+    val.innerHTML=`<span class="dot warn"></span> Cannot check updates <span style="color:var(--text-2);font-size:11px;margin-left:6px">${ver}</span>`;
+    actions.innerHTML=`<span style="font-size:12px;color:var(--text-2)">${d.error}</span><button class="sec" onclick="loadUpdateCard()" style="font-size:12px;margin-left:8px">Retry</button>`;
+    return;
+  }
+  if(d.available){
+    val.innerHTML=`<span class="dot warn"></span> ${d.commits} commit${d.commits!==1?'s':''} available <span style="color:var(--text-2);font-size:11px;margin-left:6px">${ver}</span>`;
+    actions.innerHTML=`<button onclick="applyUpdate()" style="font-size:12px">&#x2B06; Apply Update</button><button class="sec" onclick="loadUpdateCard()" style="font-size:12px;margin-left:4px">Check again</button>`;
+  }else{
+    val.innerHTML=`<span class="dot ok"></span> Up to date <span style="color:var(--text-2);font-size:11px;margin-left:6px">${ver}</span>`;
+    actions.innerHTML=`<button class="sec" onclick="loadUpdateCard()" style="font-size:12px">Check for updates</button>`;
+  }
+}
+async function applyUpdate(){
+  const val=document.getElementById('update-val');
+  const actions=document.getElementById('update-actions');
+  val.innerHTML='<span class="dot"></span> Applying update...';
+  actions.innerHTML='';
+  const r=await api('/api/update/apply','POST',{});
+  if(!r.ok){
+    val.innerHTML='<span class="dot err"></span> Update failed';
+    actions.innerHTML=`<span style="font-size:12px;color:var(--err)">${r.error}</span>`;
+    return;
+  }
+  if(r.restarting){
+    val.innerHTML='<span class="dot"></span> Restarting server...';
+    pollReconnect();
+  }else{
+    val.innerHTML='<span class="dot ok"></span> Updated \u2014 restart configure to apply';
+    actions.innerHTML=`<button class="sec" onclick="loadUpdateCard()" style="font-size:12px">Refresh</button>`;
+  }
+}
+function pollReconnect(){
+  const val=document.getElementById('update-val');
+  let attempts=0;
+  const iv=setInterval(async function(){
+    attempts++;
+    try{
+      const r=await fetch('/api/status');
+      if(r.ok){clearInterval(iv);location.reload();}
+    }catch(e){}
+    if(attempts>30){
+      clearInterval(iv);
+      val.innerHTML='<span class="dot warn"></span> Server restarted \u2014 <a href="javascript:location.reload()">reload page</a>';
+    }
+  },1000);
+}
 (function(){var t=localStorage.getItem('theme');if(t==='light'){document.body.classList.add('light');document.getElementById('theme-btn').textContent='\u263d';}})();
 loadBranding();
 loadDash();
