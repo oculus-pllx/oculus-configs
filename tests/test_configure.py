@@ -199,6 +199,43 @@ class TestHtmlJs(unittest.TestCase):
             Path(name).unlink(missing_ok=True)
 
 
+class TestCreateProject(unittest.TestCase):
+    def test_create_success(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            result = configure.create_project("My New Project", tmp, ["CLAUDE.md"])
+            self.assertTrue(result["ok"])
+            self.assertIn("path", result)
+            self.assertIn("git_log", result)
+            project_path = Path(result["path"])
+            self.assertTrue(project_path.exists())
+            self.assertIn("Initial commit", result["git_log"])
+            self.assertEqual(project_path.name, "my-new-project")
+
+    def test_create_no_templates(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            result = configure.create_project("bare", tmp, [])
+            self.assertTrue(result["ok"])
+            project_path = Path(result["path"])
+            contents = [p.name for p in project_path.iterdir()]
+            self.assertIn(".git", contents)
+
+    def test_create_folder_already_exists(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "my-project").mkdir()
+            result = configure.create_project("my-project", tmp, [])
+            self.assertFalse(result["ok"])
+            self.assertIn("already exists", result["error"])
+
+    def test_slugify(self):
+        import configure
+        self.assertEqual(configure.slugify("Hello World!"), "hello-world-")
+        self.assertEqual(configure.slugify("my-project"), "my-project")
+        self.assertEqual(configure.slugify("ABC 123"), "abc-123")
+
+
 class TestWhichGh(unittest.TestCase):
     def test_returns_gh_and_code_keys(self):
         import configure

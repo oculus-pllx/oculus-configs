@@ -30,6 +30,13 @@ KNOWN_PLUGINS = [
     {"id": "caveman@caveman",                        "label": "Caveman",          "description": "Minimal alternative workflow",                      "install": "/plugin install caveman@caveman"},
 ]
 
+TEMPLATE_FILES = {
+    "CLAUDE.md":         STARTER_DIR / "CLAUDE.md",
+    "docs/DECISIONS.md": STARTER_DIR / "docs" / "DECISIONS.md",
+    ".gitignore":        STARTER_DIR / ".gitignore",
+    "mcp.json":          STARTER_DIR / "mcp.json",
+}
+
 
 # ── API functions ─────────────────────────────────────────────────────────────
 
@@ -246,6 +253,43 @@ def which_gh() -> dict:
         "gh": shutil.which("gh") is not None,
         "code": shutil.which("code") is not None,
     }
+
+
+def slugify(name: str) -> str:
+    return re.sub(r'[^a-z0-9-]', '-', name.lower())
+
+
+def _copy_templates(dest: Path, templates: list):
+    for name in templates:
+        src = TEMPLATE_FILES.get(name)
+        if src and src.exists():
+            target = dest / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(src.read_bytes())
+
+
+def create_project(name: str, parent: str, templates: list) -> dict:
+    slug = slugify(name)
+    path = Path(parent).expanduser() / slug
+    if path.exists():
+        return {"ok": False, "error": "Folder already exists"}
+    try:
+        path.mkdir(parents=True)
+        _copy_templates(path, templates)
+        for cmd in [
+            ["git", "init", "-b", "main"],
+            ["git", "add", "-A"],
+            ["git", "commit", "-m", "Initial commit", "--allow-empty"],
+        ]:
+            r = subprocess.run(cmd, cwd=path, capture_output=True, text=True)
+            if r.returncode != 0:
+                return {"ok": False, "error": r.stderr.strip(), "path": str(path)}
+        git_log = subprocess.run(
+            ["git", "log", "--oneline"], cwd=path, capture_output=True, text=True
+        ).stdout.strip()
+        return {"ok": True, "path": str(path), "git_log": git_log}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 TEMPLATE_DEST = {
@@ -860,6 +904,13 @@ class ConfigHandler(BaseHTTPRequestHandler):
         elif path == "/api/templates/deploy":
             body = self._read_body()
             self._send_json(deploy_template(body.get("file", ""), body.get("dest", ""), body.get("content", "")))
+        elif path == "/api/projects/create":
+            body = self._read_body()
+            self._send_json(create_project(
+                body.get("name", ""),
+                body.get("parent", ""),
+                body.get("templates", [])
+            ))
         else:
             self._send_json({"error": "Not found"}, 404)
 
