@@ -347,6 +347,23 @@ def fs_mkdir(parent: str, name: str) -> dict:
         return {"ok": False, "error": str(e)}
 
 
+def fs_rename(path: str, new_name: str) -> dict:
+    new_name = (new_name or "").strip()
+    if not new_name:
+        return {"ok": False, "error": "Name cannot be empty"}
+    try:
+        src = Path(path).expanduser().resolve()
+        if _is_protected(src):
+            return {"ok": False, "error": "Cannot rename — protected path"}
+        dest = src.parent / new_name
+        if dest.exists():
+            return {"ok": False, "error": f"'{new_name}' already exists"}
+        src.rename(dest)
+        return {"ok": True, "path": str(dest)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 TEMPLATE_DEST = {
     "template-claude":    "CLAUDE.md",
     "template-decisions": os.path.join("docs", "DECISIONS.md"),

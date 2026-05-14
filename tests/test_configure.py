@@ -205,6 +205,36 @@ class TestFsMkdir(unittest.TestCase):
         self.assertIn("empty", result["error"].lower())
 
 
+class TestFsRename(unittest.TestCase):
+    def test_rename_success(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "old-name"
+            src.mkdir()
+            result = configure.fs_rename(str(src), "new-name")
+            self.assertTrue(result["ok"])
+            self.assertTrue(Path(tmp, "new-name").exists())
+            self.assertFalse(src.exists())
+
+    def test_rename_conflict(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "old").mkdir()
+            (Path(tmp) / "taken").mkdir()
+            result = configure.fs_rename(str(Path(tmp) / "old"), "taken")
+        self.assertFalse(result["ok"])
+        self.assertIn("already exists", result["error"])
+
+    def test_rename_empty_name(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "folder"
+            src.mkdir()
+            result = configure.fs_rename(str(src), "")
+        self.assertFalse(result["ok"])
+        self.assertIn("empty", result["error"].lower())
+
+
 class TestHtmlJs(unittest.TestCase):
     def test_js_syntax(self):
         import configure
