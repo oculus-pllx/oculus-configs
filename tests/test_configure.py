@@ -385,6 +385,50 @@ class TestRestartService(unittest.TestCase):
         self.assertIsNone(result["error"])
 
 
+class TestApplyUpdate(unittest.TestCase):
+    def test_success(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            repo.mkdir()
+            (repo / "configure.py").write_text("# fake")
+            with patch.object(configure, "get_repo_path", return_value=str(repo)):
+                with patch("configure.subprocess.run") as mock_run:
+                    mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+                    with patch.object(configure, "_restart_service", return_value={"restarting": True, "error": None}):
+                        with patch("configure.shutil.copy2"):
+                            result = configure.apply_update()
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["restarting"])
+
+    def test_pull_failure_aborts_before_copy(self):
+        import configure
+        with patch.object(configure, "get_repo_path", return_value="/repo"):
+            with patch("configure.subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="merge conflict")
+                with patch("configure.shutil.copy2") as mock_copy:
+                    result = configure.apply_update()
+        self.assertFalse(result["ok"])
+        self.assertIn("pull failed", result["error"])
+        mock_copy.assert_not_called()
+
+    def test_copy_failure_skips_restart(self):
+        import configure
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            repo.mkdir()
+            (repo / "configure.py").write_text("# fake")
+            with patch.object(configure, "get_repo_path", return_value=str(repo)):
+                with patch("configure.subprocess.run") as mock_run:
+                    mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+                    with patch("configure.shutil.copy2", side_effect=PermissionError("denied")):
+                        with patch.object(configure, "_restart_service") as mock_restart:
+                            result = configure.apply_update()
+        self.assertFalse(result["ok"])
+        self.assertIn("copy failed", result["error"])
+        mock_restart.assert_not_called()
+
+
 class TestHtmlJs(unittest.TestCase):
     def test_js_syntax(self):
         import configure

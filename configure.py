@@ -476,6 +476,28 @@ def _restart_service() -> dict:
         return {"restarting": False, "error": str(e)}
 
 
+def apply_update() -> dict:
+    repo = get_repo_path()
+    if not repo:
+        return {"ok": False, "error": "repo not configured — run install.sh again"}
+    try:
+        r = subprocess.run(
+            ["git", "pull"], cwd=repo, capture_output=True, text=True, timeout=30
+        )
+        if r.returncode != 0:
+            return {"ok": False, "error": f"git pull failed: {r.stderr.strip() or r.stdout.strip()}"}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "git pull timed out"}
+    src = Path(repo) / "configure.py"
+    dest = Path.home() / ".local" / "bin" / "configure"
+    try:
+        shutil.copy2(str(src), str(dest))
+    except Exception as e:
+        return {"ok": False, "error": f"copy failed — repo updated, binary unchanged: {e}"}
+    restart = _restart_service()
+    return {"ok": True, "restarting": restart["restarting"]}
+
+
 TEMPLATE_DEST = {
     "template-claude":    "CLAUDE.md",
     "template-decisions": os.path.join("docs", "DECISIONS.md"),
@@ -1503,6 +1525,8 @@ class ConfigHandler(BaseHTTPRequestHandler):
         elif path == "/api/fs/move":
             body = self._read_body()
             self._send_json(fs_move(body.get("src", ""), body.get("dest", "")))
+        elif path == "/api/update/apply":
+            self._send_json(apply_update())
         else:
             self._send_json({"error": "Not found"}, 404)
 
