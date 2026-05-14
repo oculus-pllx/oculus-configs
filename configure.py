@@ -454,6 +454,28 @@ def check_update() -> dict:
         return {"available": False, "error": str(e)}
 
 
+def _restart_service() -> dict:
+    system = platform.system()
+    try:
+        if system == "Linux":
+            r = subprocess.run(
+                ["systemctl", "--user", "restart", "oculus-configure"],
+                capture_output=True, text=True, timeout=10
+            )
+            return {"restarting": r.returncode == 0, "error": r.stderr.strip() if r.returncode != 0 else None}
+        elif system == "Darwin":
+            uid = str(os.getuid())
+            r = subprocess.run(
+                ["launchctl", "kickstart", "-k", f"gui/{uid}/com.oculus.configure"],
+                capture_output=True, text=True, timeout=10
+            )
+            return {"restarting": r.returncode == 0, "error": r.stderr.strip() if r.returncode != 0 else None}
+        else:
+            return {"restarting": False, "error": None}
+    except Exception as e:
+        return {"restarting": False, "error": str(e)}
+
+
 TEMPLATE_DEST = {
     "template-claude":    "CLAUDE.md",
     "template-decisions": os.path.join("docs", "DECISIONS.md"),

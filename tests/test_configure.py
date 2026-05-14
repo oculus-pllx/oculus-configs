@@ -355,6 +355,36 @@ class TestCheckUpdate(unittest.TestCase):
         self.assertEqual(result["latest"], "abc1234")
 
 
+class TestRestartService(unittest.TestCase):
+    def test_linux_uses_systemctl(self):
+        import configure
+        with patch("configure.platform.system", return_value="Linux"):
+            with patch("configure.subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(returncode=0, stderr="")
+                result = configure._restart_service()
+        self.assertTrue(result["restarting"])
+        cmd = mock_run.call_args[0][0]
+        self.assertIn("systemctl", cmd)
+        self.assertIn("oculus-configure", cmd)
+
+    def test_macos_uses_launchctl(self):
+        import configure
+        with patch("configure.platform.system", return_value="Darwin"):
+            with patch("configure.subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(returncode=0, stderr="")
+                result = configure._restart_service()
+        self.assertTrue(result["restarting"])
+        cmd = mock_run.call_args[0][0]
+        self.assertIn("launchctl", cmd)
+
+    def test_unknown_platform_no_restart(self):
+        import configure
+        with patch("configure.platform.system", return_value="Windows"):
+            result = configure._restart_service()
+        self.assertFalse(result["restarting"])
+        self.assertIsNone(result["error"])
+
+
 class TestHtmlJs(unittest.TestCase):
     def test_js_syntax(self):
         import configure
