@@ -532,6 +532,11 @@ HTML = """<!DOCTYPE html>
     .np-result{background:var(--surface-deep);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:10px;font-family:'Courier New',monospace;font-size:12px;color:var(--code-fg)}
     .np-err{background:var(--err-border);border:1px solid var(--err);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--err);margin-bottom:12px;line-height:1.5}
     .np-ok{color:var(--ok);font-weight:600;font-size:15px;margin-bottom:12px}
+    .fm-toolbar{display:none;padding:6px 12px;border-bottom:1px solid var(--border);gap:6px;flex-wrap:wrap}
+    .fm-toolbar.active{display:flex}
+    .fm-toolbar .sec{font-size:12px;padding:4px 10px}
+    .fm-item-sel{background:var(--accent)!important;color:#fff!important}
+    .fm-error{display:none;padding:4px 14px 6px;font-size:12px;color:var(--err)}
   </style>
 </head>
 <body>
@@ -753,15 +758,22 @@ HTML = """<!DOCTYPE html>
 <div class="modal-overlay" id="browse-modal" style="display:none" onclick="if(event.target===this)closeBrowse()">
   <div class="modal">
     <div class="modal-header">
-      <h3>Select Project Folder</h3>
+      <h3 id="browse-title">Select Project Folder</h3>
       <button onclick="closeBrowse()">&#x2715;</button>
     </div>
     <div class="modal-crumb" id="browse-crumb">/</div>
+    <div id="fm-toolbar" class="fm-toolbar">
+      <button class="sec" onclick="fmNewFolder()">+ New Folder</button>
+      <button class="sec" id="fm-rename-btn" onclick="fmRename()" disabled>Rename</button>
+      <button class="sec" id="fm-delete-btn" onclick="fmDelete()" style="color:var(--err)" disabled>Delete</button>
+      <button class="sec" id="fm-move-btn" onclick="fmMove()" disabled>Move</button>
+    </div>
+    <div class="fm-error" id="fm-error"></div>
     <div class="modal-list" id="browse-list"></div>
     <div class="modal-footer">
       <span class="sel-path" id="browse-sel"></span>
       <button class="sec" onclick="closeBrowse()">Cancel</button>
-      <button onclick="confirmBrowse()">Select This Folder</button>
+      <button id="browse-select-btn" onclick="confirmBrowse()">Select This Folder</button>
     </div>
   </div>
 </div>
