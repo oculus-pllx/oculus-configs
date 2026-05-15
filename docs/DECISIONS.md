@@ -81,9 +81,26 @@
 
 ---
 
-## Future: Codex CLI configs (codex/) and Gemini CLI configs (gemini/)
+## ADR-008: Codex CLI and Gemini CLI skill ports — parallel directory structure
 
-**Date**: 2026-05-13  
-**Status**: Planned (not started)
+**Date**: 2026-05-14 (Codex), 2026-05-15 (Gemini)  
+**Status**: Accepted
 
-**Decision**: When Codex and Gemini CLI support is added, each gets a top-level directory (`codex/`, `gemini/`) following the same pattern as `claude/` — config files + an install script section.
+**Decision**: Each CLI gets a top-level directory (`codex/`, `gemini/`) with a global config file (`AGENTS.md` / `GEMINI.md`) and a `skills/` subdirectory containing 8 Superpowers-equivalent SKILL.md files. `install.sh` gets one section per CLI (§8 Codex, §9 Gemini) that detects whether the CLI is installed and copies files to the appropriate home directory (`~/.codex/`, `~/.gemini/`).
+
+**Why**: Mirrors the existing `claude/` pattern — each AI CLI gets its own isolated config namespace. Separate directories prevent cross-contamination if one CLI is uninstalled, and let skill content diverge independently per platform over time.
+
+**Consequences**: Skill content is duplicated between `codex/skills/` and `gemini/skills/` (not shared). Cross-references within skill files (e.g. systematic-debugging → test-driven-development) are path-specific to each CLI (`~/.codex/skills/` vs `~/.gemini/skills/`). Syncing content updates across CLIs is manual.
+
+---
+
+## ADR-009: Lazy skill loading via read-file triggers, not eager includes
+
+**Date**: 2026-05-15  
+**Status**: Accepted
+
+**Decision**: Neither `AGENTS.md` nor `GEMINI.md` includes skill content at session start. Instead, they instruct the CLI to read the relevant SKILL.md file (`cat ~/.codex/skills/<name>/SKILL.md` / `read_file ~/.gemini/skills/<name>/SKILL.md`) only when a workflow trigger fires.
+
+**Why**: Loading all 8 skills upfront would add ~15–20k tokens of context per session. Skills are situational — brainstorming fires before feature work, systematic-debugging fires when stuck. Most sessions never need most skills.
+
+**Consequences**: Skill content is not available until triggered. This is intentional — the trigger IS the activation.
