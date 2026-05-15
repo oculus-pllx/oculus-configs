@@ -474,6 +474,81 @@ class TestCodexSkills(unittest.TestCase):
         self.assertIn("~/.codex/skills", content)
 
 
+class TestStarterTemplate(unittest.TestCase):
+    def setUp(self):
+        self.starter_dir = Path(__file__).parent.parent / "templates" / "claude-code-starter"
+
+    def test_mcp_json_exists(self):
+        self.assertTrue(
+            (self.starter_dir / "mcp.json").exists(),
+            "templates/claude-code-starter/mcp.json missing"
+        )
+
+    def test_mcp_json_valid(self):
+        p = self.starter_dir / "mcp.json"
+        data = json.loads(p.read_text())
+        self.assertIn("mcpServers", data)
+        self.assertIn("github", data["mcpServers"])
+        self.assertIn("context7", data["mcpServers"])
+
+
+class TestGeminiSkills(unittest.TestCase):
+    SKILLS = [
+        "brainstorming",
+        "systematic-debugging",
+        "test-driven-development",
+        "requesting-code-review",
+        "receiving-code-review",
+        "writing-plans",
+        "verification-before-completion",
+        "finishing-a-development-branch",
+    ]
+
+    def setUp(self):
+        self.gemini_dir = Path(__file__).parent.parent / "gemini"
+
+    def test_gemini_md_exists(self):
+        self.assertTrue(
+            (self.gemini_dir / "GEMINI.md").exists(),
+            "gemini/GEMINI.md missing"
+        )
+
+    def test_gemini_md_has_tool_mapping(self):
+        content = (self.gemini_dir / "GEMINI.md").read_text()
+        self.assertIn("read_file", content)
+        self.assertIn("run_shell_command", content)
+        self.assertIn("activate_skill", content)
+
+    def test_gemini_md_has_skill_triggers(self):
+        content = (self.gemini_dir / "GEMINI.md").read_text()
+        for skill in self.SKILLS:
+            with self.subTest(skill=skill):
+                self.assertIn(skill, content, f"GEMINI.md missing trigger for {skill}")
+
+    def test_all_skill_dirs_exist(self):
+        for skill in self.SKILLS:
+            with self.subTest(skill=skill):
+                path = self.gemini_dir / "skills" / skill / "SKILL.md"
+                self.assertTrue(path.exists(), f"gemini/skills/{skill}/SKILL.md missing")
+
+    def test_all_skills_have_valid_frontmatter(self):
+        for skill in self.SKILLS:
+            with self.subTest(skill=skill):
+                path = self.gemini_dir / "skills" / skill / "SKILL.md"
+                content = path.read_text()
+                self.assertTrue(content.startswith("---"), f"{skill}: missing frontmatter opening ---")
+                end = content.index("---", 3)
+                fm = content[3:end]
+                self.assertIn("name:", fm, f"{skill}: frontmatter missing 'name' field")
+                self.assertIn("description:", fm, f"{skill}: frontmatter missing 'description' field")
+
+    def test_install_sh_has_gemini_section(self):
+        install = Path(__file__).parent.parent / "install.sh"
+        content = install.read_text()
+        self.assertIn("~/.gemini/GEMINI.md", content)
+        self.assertIn("~/.gemini/skills", content)
+
+
 class TestBrowseDir(unittest.TestCase):
     def test_excludes_hidden_by_default(self):
         import configure
