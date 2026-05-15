@@ -429,6 +429,51 @@ class TestApplyUpdate(unittest.TestCase):
         mock_restart.assert_not_called()
 
 
+class TestCodexSkills(unittest.TestCase):
+    SKILLS = [
+        "brainstorming",
+        "systematic-debugging",
+        "test-driven-development",
+        "requesting-code-review",
+        "receiving-code-review",
+        "writing-plans",
+        "verification-before-completion",
+        "finishing-a-development-branch",
+    ]
+
+    def setUp(self):
+        self.codex_dir = Path(__file__).parent.parent / "codex"
+
+    def test_agents_md_exists(self):
+        self.assertTrue(
+            (self.codex_dir / "AGENTS.md").exists(),
+            "codex/AGENTS.md missing"
+        )
+
+    def test_all_skill_dirs_exist(self):
+        for skill in self.SKILLS:
+            with self.subTest(skill=skill):
+                path = self.codex_dir / "skills" / skill / "SKILL.md"
+                self.assertTrue(path.exists(), f"codex/skills/{skill}/SKILL.md missing")
+
+    def test_all_skills_have_valid_frontmatter(self):
+        for skill in self.SKILLS:
+            with self.subTest(skill=skill):
+                path = self.codex_dir / "skills" / skill / "SKILL.md"
+                content = path.read_text()
+                self.assertTrue(content.startswith("---"), f"{skill}: missing frontmatter opening ---")
+                end = content.index("---", 3)
+                fm = content[3:end]
+                self.assertIn("name:", fm, f"{skill}: frontmatter missing 'name' field")
+                self.assertIn("description:", fm, f"{skill}: frontmatter missing 'description' field")
+
+    def test_install_sh_has_codex_section(self):
+        install = Path(__file__).parent.parent / "install.sh"
+        content = install.read_text()
+        self.assertIn("~/.codex/AGENTS.md", content)
+        self.assertIn("~/.codex/skills", content)
+
+
 class TestBrowseDir(unittest.TestCase):
     def test_excludes_hidden_by_default(self):
         import configure

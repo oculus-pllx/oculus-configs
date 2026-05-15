@@ -133,6 +133,26 @@ else
   echo "       Run manually: configure"
 fi
 
+# ── 8. Codex CLI setup ──────────────────────────────────────────────────────
+if command -v codex &>/dev/null; then
+  CODEX_DIR="$HOME/.codex"
+  mkdir -p "$CODEX_DIR/skills"
+
+  if [ -f "$CODEX_DIR/AGENTS.md" ]; then
+    cp "$CODEX_DIR/AGENTS.md" "$CODEX_DIR/AGENTS.md.bak"
+    echo "[info] ~/.codex/AGENTS.md backed up to AGENTS.md.bak"
+  fi
+  cp "$REPO_DIR/codex/AGENTS.md" "$CODEX_DIR/AGENTS.md"
+  echo "[ok]   ~/.codex/AGENTS.md"
+
+  cp -r "$REPO_DIR/codex/skills/"* "$CODEX_DIR/skills/"
+  SKILL_COUNT=$(ls "$REPO_DIR/codex/skills/" | wc -l | tr -d ' ')
+  echo "[ok]   ~/.codex/skills/ ($SKILL_COUNT skills installed)"
+else
+  echo "[skip] codex not found — skipping Codex CLI setup"
+  echo "       Install Codex then re-run install.sh"
+fi
+
 echo ""
 echo "=== Done ==="
 echo ""
