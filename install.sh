@@ -153,6 +153,26 @@ else
   echo "       Install Codex then re-run install.sh"
 fi
 
+# ── 9. Gemini CLI setup ──────────────────────────────────────────────────────
+if command -v gemini &>/dev/null; then
+  GEMINI_DIR="$HOME/.gemini"
+  mkdir -p "$GEMINI_DIR/skills"
+
+  if [ -f "$GEMINI_DIR/GEMINI.md" ]; then
+    cp "$GEMINI_DIR/GEMINI.md" "$GEMINI_DIR/GEMINI.md.bak"
+    echo "[info] ~/.gemini/GEMINI.md backed up to GEMINI.md.bak"
+  fi
+  cp "$REPO_DIR/gemini/GEMINI.md" "$GEMINI_DIR/GEMINI.md"
+  echo "[ok]   ~/.gemini/GEMINI.md"
+
+  cp -r "$REPO_DIR/gemini/skills/"* "$GEMINI_DIR/skills/"
+  SKILL_COUNT=$(ls "$REPO_DIR/gemini/skills/" | wc -l | tr -d ' ')
+  echo "[ok]   ~/.gemini/skills/ ($SKILL_COUNT skills installed)"
+else
+  echo "[skip] gemini not found — skipping Gemini CLI setup"
+  echo "       Install Gemini CLI then re-run install.sh"
+fi
+
 echo ""
 echo "=== Done ==="
 echo ""
