@@ -1043,7 +1043,7 @@ HTML = """<!DOCTYPE html>
 const THEMES={
   aurora:{
     '--accent':'#38bdf8','--accent-dim':'rgba(56,189,248,.12)',
-    '--accent-border':'rgba(56,189,248,.25)','--accent-glow':'rgba(56,189,248,.2)',
+    '--accent-border':'rgba(56,189,248,.25)','--accent-glow':'rgba(56,189,248,.18)',
     '--wordmark-from':'#38bdf8','--wordmark-to':'#a78bfa',
     '--glow-a':'rgba(56,189,248,.18)','--glow-b':'rgba(139,92,246,.12)',
     '--glow-c':'rgba(16,185,129,.07)','--glow-d':'rgba(56,189,248,.06)',
