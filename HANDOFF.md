@@ -67,6 +67,48 @@ oculus-configs/
 
 ---
 
+## Local dev server (review & testing)
+
+The installed `configure` binary serves the **last installed version**, not live repo changes. To test edits in `configure.py` without reinstalling:
+
+```bash
+# Kill the service (frees port 4827)
+sudo systemctl stop configure      # Linux/WSL2
+# or: launchctl stop com.oculus.configure   # macOS
+
+# Run repo version directly — opens browser automatically
+cd ~/repos/oculus-configs
+python3 configure.py
+
+# Ctrl+C to stop, then restart service when done
+sudo systemctl start configure
+```
+
+**Alt: run on a spare port** (leaves service running)
+
+```bash
+# One-liner — temp copy on 4828, no browser pop
+sed 's/PORT = 4827/PORT = 4828/' configure.py > /tmp/configure_dev.py
+python3 /tmp/configure_dev.py
+# open http://localhost:4828 manually
+```
+
+**Tests** (no server needed):
+
+```bash
+python3 tests/test_configure.py        # 65 tests, stdlib only, ~0.25s
+```
+
+**After UI changes** — reinstall binary so `configure` picks them up:
+
+```bash
+cp configure.py ~/.local/bin/configure
+chmod +x ~/.local/bin/configure
+sudo systemctl restart configure
+```
+
+---
+
 ## Near-term items
 
 - [ ] Set GitHub PAT via MCP Setup tab
