@@ -104,3 +104,16 @@
 **Why**: Loading all 8 skills upfront would add ~15–20k tokens of context per session. Skills are situational — brainstorming fires before feature work, systematic-debugging fires when stuck. Most sessions never need most skills.
 
 **Consequences**: Skill content is not available until triggered. This is intentional — the trigger IS the activation.
+
+---
+
+## ADR-010: Glass/Aurora GUI redesign — CSS custom property theme system
+
+**Date**: 2026-05-22
+**Status**: Accepted
+
+**Decision**: Replace the flat dark sidebar UI in `configure.py` with a glass/aurora aesthetic: top navigation bar, frosted glass surfaces (`backdrop-filter: blur(12px)`), and a `body::before` aurora background built from 4 layered `radial-gradient` calls driven by CSS custom properties (`--glow-a/b/c/d`). Three themes (True Aurora, Sky Cyan, Violet) are defined as a `THEMES` JS constant and switched via `document.documentElement.style.setProperty()`. Active theme persists to `localStorage` under key `'oculus-theme'`.
+
+**Why**: The previous UI was functional but visually generic. The aurora effect is distinctive, the CSS custom property architecture makes theme switching zero-JS-DOM-manipulation (just property writes), and the `body::before` technique keeps the gradient off the content stacking context entirely — no z-index conflicts. The design is also portable: `docs/themes.md` is a standalone data sheet for reusing the aurora system on other projects.
+
+**Consequences**: Light mode removed (aurora is always dark). All surfaces must set `position: relative; z-index: 1` to appear above the pseudo-element aurora layer. `backdrop-filter` has no effect if the parent has `overflow: hidden` — avoid that combination on glass cards.
