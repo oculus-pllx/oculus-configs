@@ -70,7 +70,7 @@ oculus-configs/
 ## Near-term items
 
 - [ ] Set GitHub PAT via MCP Setup tab
-- [ ] **CCC integration** — see below
+- [x] **CCC integration** — complete
 - [x] Gemini CLI support
 - [x] Add mcp.json to templates/claude-code-starter/
 - [x] Fix apply_update to restart systemd after binary copy
@@ -92,24 +92,6 @@ python3 tests/test_configure.py   # should show 65 tests OK
 
 ---
 
-## CCC Integration (next major task)
-
-**Repo**: https://github.com/oculus-pllx/CCC
-**Work in**: ~/repos/CCC (clone it there if not present)
-
-oculus-configs is ready to be consumed by CCC as a provisioning step. CCC currently embeds CLAUDE.md as a heredoc (line ~619, step 18) and creates `~/.claude/skills/` but doesn't populate it.
-
-**What the integration needs:**
-1. New provisioning step: clone oculus-configs + run `./install.sh` inside the container
-2. Remove the inline CLAUDE.md heredoc (replaced by install.sh)
-3. Open port 4827 in the firewall step (configure UI, alongside code-server on 8080)
-4. Add configure UI entry to the MOTD
-
-**Resumption prompt for CCC session:**
-> "Resume CCC integration. We want to add oculus-configs (https://github.com/oculus-pllx/CCC) as a provisioning step in claude-code-commander.sh. During LXC setup, CCC should clone oculus-configs into the container and run install.sh, replacing the embedded CLAUDE.md heredoc (step 18, line ~619) with the one from oculus-configs. configure.py then runs as a systemd service on port 4827 alongside code-server (8080). Need to: (1) add provisioning step to clone + run install.sh, (2) remove the inline CLAUDE.md heredoc, (3) open port 4827 in the firewall step, (4) add configure UI to the MOTD. Start with brainstorming."
-
----
-
 ## Resumption prompt (this repo)
 
-> "Resume oculus-configs (5b61a0c). Repo is clean — 65 tests, glass/aurora GUI, 9-section install.sh covering Claude/Codex/Gemini CLI. README and DECISIONS.md are current (ADR-010). CCC integration is the active next task (see HANDOFF.md). If staying in this repo, check Near-term items."
+> "Resume oculus-configs (5b61a0c). Repo is clean — 65 tests, glass/aurora GUI, 9-section install.sh covering Claude/Codex/Gemini CLI. README and DECISIONS.md are current (ADR-010). CCC integration is complete. Check Near-term items for what's left."
