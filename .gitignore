@@ -1,6 +1,12 @@
 # Session bridges (ephemeral, never commit)
 HANDOFF.md
 
+# Internal planning/design artifacts (local only)
+docs/plans/
+docs/specs/
+docs/superpowers/
+docs/original-request.md
+
 # Visual brainstorming companion artifacts
 .superpowers/
 
