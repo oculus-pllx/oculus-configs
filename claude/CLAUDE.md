@@ -6,7 +6,8 @@
 ### Superpowers (superpowers@claude-plugins-official) — ENABLED
 - Use brainstorming skill before any new feature work
 - Use TDD skill before writing application code
-- Use code review skill before marking PRs ready
+- Use code review skill before shipping a slice of work
+- **Default workflow: commit and push straight to `main`; no PRs.** Pushing to origin is part of finishing — don't wait for an explicit "push" directive. Only a project that *uses* PRs should say so in its own `CLAUDE.md` (e.g. `Workflow: uses PRs`); absent that, never offer or open a PR.
 - Skills live in: `~/.claude/plugins/cache/claude-plugins-official/superpowers/`
 
 ### Frontend Design (frontend-design@claude-plugins-official) — ENABLED

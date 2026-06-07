@@ -48,7 +48,10 @@ Max 50 chars in subject line.
 ### Always use
 - **Brainstorming**: Before any new feature — requirements before code
 - **TDD**: Write test first, then implementation
-- **Code Review**: Before any PR is marked ready
+- **Code Review**: Before shipping a slice of work
+
+### Workflow default
+- **Commit and push straight to `main`; no PRs.** Pushing is part of finishing. If *this* project uses PRs instead, change this line to `Workflow: uses PRs`.
 
 ### Use when applicable
 - **Refactoring**: Large module changes

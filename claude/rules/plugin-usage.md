@@ -3,7 +3,7 @@
 ## Superpowers Skill Triggers
 - **Brainstorming**: Any new feature or non-trivial task — invoke BEFORE touching code
 - **TDD**: Before writing any application code — write the test first
-- **Code Review**: Before any PR is marked ready — run this skill
+- **Code Review**: Before shipping a slice of work — run this skill (default workflow pushes to `main`, no PRs; see global CLAUDE.md)
 - **Debugging**: When stuck on a bug for more than 10 minutes — use systematic-debugging skill
 - **Frontend Design**: Any UI component or layout decision
 
