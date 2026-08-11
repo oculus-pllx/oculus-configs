@@ -41,8 +41,8 @@ looks. For anything about how a UI should look, match the surrounding code.
 If a project has none and one is needed, ask — adopting a design system is a
 product decision, not a technical one, and it is visible to every user.
 
-Material Design 3 is available as a reference *if a project chooses it*:
-`~/.claude/rules/ui-material3.md`. That file is not loaded by default. It is
-Google's house style — a specific brand language with its own color model,
-type scale, and component vocabulary — not a neutral set of best practices.
-Do not apply it unasked, and do not treat its absence as a gap.
+Material Design 3, Tailwind's defaults, Bootstrap, Fluent — these are **house
+styles**, not best practices. Each carries a brand's own color model, type
+scale, and component vocabulary. Applying one unasked silently makes the
+product look like someone else's. Do not treat the absence of a design system
+as a gap to be filled.
