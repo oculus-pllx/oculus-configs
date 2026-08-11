@@ -12,8 +12,11 @@
 
 ### Frontend Design (frontend-design@claude-plugins-official) — ENABLED
 - Use for any UI/UX work, component design, or visual layout decisions
-- **Material Design 3 is the default UI baseline** — see `rules/ui-material3.md`.
-  A project overrides it by naming its own design system in its `CLAUDE.md`.
+- **No default design system.** `rules/ui-baseline.md` covers accessibility and
+  structure only; visual style comes from whatever the project already uses.
+- Material Design 3 is available as an opt-in reference at
+  `rules/ui-material3.md` — not loaded by default. It is Google's house style,
+  not a best-practices baseline; use it only when a project chooses it.
 
 ### Skill Creator (skill-creator@claude-plugins-official) — ENABLED
 - Use to build custom project-specific skills when a pattern repeats
@@ -42,4 +45,4 @@
 
 @~/.claude/rules/code-quality.md
 @~/.claude/rules/plugin-usage.md
-@~/.claude/rules/ui-material3.md
+@~/.claude/rules/ui-baseline.md

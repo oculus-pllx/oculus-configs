@@ -1,13 +1,19 @@
-# UI Baseline — Material Design 3
+# Reference — Material Design 3
 
-**Applies when** building or modifying a user interface: web, desktop, or
-mobile. On backend, CLI, infrastructure, or data work, ignore this file
-entirely — do not volunteer design commentary where there is no UI.
-
-Material Design 3 (M3) is the default design system for new UI. It is a
-baseline, not a cage: a project whose own `CLAUDE.md` names a different system
-(Tailwind defaults, shadcn/ui, Bootstrap, an in-house kit) overrides this file.
-Match the surrounding code before importing anything from here.
+> **Opt-in reference. Not loaded by default and not a default.**
+>
+> This file is *not* `@`-included from the global `CLAUDE.md`; it is read on
+> request. Use it only when a project has explicitly chosen Material Design 3.
+>
+> M3 is **Google's house style** — a specific brand language with its own color
+> model, type scale, elevation idiom, and component vocabulary (FAB, nav rail,
+> chips). It is not a neutral summary of UI best practices, and applying it to a
+> project that did not ask for it silently makes that product look like a Google
+> product. The universal subset — accessibility, tokens, responsive structure —
+> lives in `ui-baseline.md`, which *is* loaded by default.
+>
+> Do not cite this file as justification for a change. Cite the project's own
+> design system, or the user's request.
 
 Values below are M3 spec figures in dp/sp. On the web, treat 1dp = 1px and
 1sp = 1rem/16.
