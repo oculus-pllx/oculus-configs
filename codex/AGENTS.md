@@ -16,6 +16,27 @@ Skill files use Claude Code tool names. In Codex, use these equivalents:
 | `Task` subagent dispatch | not supported — skip those steps in skills |
 | `WebSearch` | web search if available |
 
+## Communication Discipline
+
+- Lead with the result. Add context only when it changes the decision or next action.
+- Default to under 150 words when that is enough to communicate the result.
+- Cut preambles, request restatement, routine tool narration, repeated summaries,
+  hedge stacks, and closing offers.
+- Prefer one recommendation over a survey when a choice is requested.
+- Preserve exact evidence, failures, unresolved risks, and genuine uncertainty.
+  Fewer words must never mean fewer facts.
+
+## Context Discipline
+
+- Use the minimum context needed to complete the task correctly; there are no
+  hard token, file, or tool-call limits when more evidence is necessary.
+- Search narrowly first and read relevant sections before loading whole files.
+- Do not reopen unchanged files or repeat checks unless new evidence justifies it.
+- Use subagents only for genuinely independent work that benefits from parallelism.
+- Stop gathering context when the answer is established and the requested work is
+  verified.
+- Correctness and completion override brevity.
+
 ## Workflow Standards
 
 **Before any new feature or non-trivial change:**
