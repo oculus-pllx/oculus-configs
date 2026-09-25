@@ -8,7 +8,7 @@ class TestRegistryPointer(unittest.TestCase):
     def test_every_tool_points_at_the_registry(self):
         root = Path(__file__).parents[1]
         for rel in SOURCES:
-            text = (root / rel).read_text().replace("**", "")
+            text = " ".join((root / rel).read_text().replace("**", "").split())
             with self.subTest(source=rel):
                 self.assertIn("## Credentials and Infrastructure Registry", text)
                 self.assertIn("Meridian-VPS/docs/access-map.md", text)
