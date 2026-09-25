@@ -80,3 +80,12 @@ Read and follow `~/.codex/skills/requesting-code-review/SKILL.md`
 2. **Commit frequently** — every logical change is a git checkpoint
 3. **HANDOFF.md bridges sessions** — 100 lines of structured context beats 500k tokens of history
 4. **DECISIONS.md tracks architecture** — always commit this; never commit HANDOFF.md
+
+## Credentials and Infrastructure Registry
+
+Before reporting any credential, token, host, or tunnel as missing or unknown, read
+`/srv/ccc/projects/Meridian-VPS/docs/access-map.md`. It is the single registry of every credential
+on this workstation: what it can do, where it lives (PRISM vault, `/etc/ccc/secrets/`, `~/.config`),
+and which projects depend on it. It holds locations only. **Never print, log, or commit a secret value**; read tokens into a variable in a subshell and report only status, names, or hashes. Update
+the registry when a credential is created, moved, or rotated. Other projects point to it rather than
+keeping their own copy.

@@ -47,8 +47,7 @@
 Before reporting any credential, token, host, or tunnel as missing or unknown, read
 `/srv/ccc/projects/Meridian-VPS/docs/access-map.md`. It is the single registry of every credential
 on this workstation: what it can do, where it lives (PRISM vault, `/etc/ccc/secrets/`, `~/.config`),
-and which projects depend on it. It holds locations only. **Never print, log, or commit a secret
-value**; read tokens into a variable in a subshell and report only status, names, or hashes. Update
+and which projects depend on it. It holds locations only. **Never print, log, or commit a secret value**; read tokens into a variable in a subshell and report only status, names, or hashes. Update
 the registry when a credential is created, moved, or rotated. Other projects point to it rather than
 keeping their own copy.
 
