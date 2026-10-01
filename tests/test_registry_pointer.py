@@ -11,7 +11,7 @@ class TestRegistryPointer(unittest.TestCase):
             text = " ".join((root / rel).read_text().replace("**", "").split())
             with self.subTest(source=rel):
                 self.assertIn("## Credentials and Infrastructure Registry", text)
-                self.assertIn("Meridian-VPS/docs/access-map.md", text)
+                self.assertIn("/etc/ccc/registry/access-map.md", text)
                 self.assertIn("Never print, log, or commit a secret value", text)
 
 
