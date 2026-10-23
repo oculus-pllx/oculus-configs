@@ -52,6 +52,16 @@ value**; read tokens into a variable in a subshell and report only status, names
 the registry when a credential is created, moved, or rotated. Other projects point to it rather than
 keeping their own copy.
 
+## Parallax EQEmu Knowledge and Tooling
+
+For any Parallax EQEmu project, begin at
+`/srv/ccc/projects/parallax-emu-coordinator` and follow its project map. The canonical
+EQEmu Tome, operational knowledge, and LightRAG loaders live in
+`/srv/ccc/projects/parallax-eqemu`; do not copy their implementations into sibling
+repositories. Load the approved operational chapter with
+`python3 deploy/sysmap.py rag-load-operations` from that repository. This adds only
+the allowlisted operational source and does not clear the public system map.
+
 @~/.claude/rules/code-quality.md
 @~/.claude/rules/plugin-usage.md
 @~/.claude/rules/ui-baseline.md
