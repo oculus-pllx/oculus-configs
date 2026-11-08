@@ -1,6 +1,35 @@
 # Global Claude Code Configuration
 **Scope**: All projects on this machine
 
+## Remote Jobs and Usage Budget (HIGH PRIORITY)
+
+- Treat hourly and weekly AI usage as a limited resource. Waiting for a remote
+  job must not consume repeated model turns or repeatedly reload conversation
+  context.
+- Start long builds, CI, deployments, transfers, and scans once; record the job
+  ID, host, commit, log/artifact location, and next action in a concise handoff.
+- Prefer completion events, callbacks, or a detached non-AI watcher that records
+  the final result. Use notifications only through an already authorized channel.
+- Do not run minute-by-minute status checks, sleep/poll/model-turn loops, or
+  repeated "still running" updates. An unchanged running state needs no analysis.
+- If completion events are unavailable, leave the job running unattended and
+  report its ID and how to resume once. Do not claim you will monitor it after
+  ending the turn. Check again when the user requests it or a completion/failure
+  signal arrives. Explicit monitoring requests permit a detached watcher, not
+  repeated model-driven polling.
+- Inspect only the final status and relevant failure output on completion.
+  Investigate earlier only when concrete evidence requires intervention.
+- Reuse verified results for the same commit and artifact. Repeat a check only
+  after a relevant change, a failure, or a specific unresolved concern; do not
+  rerun broad gates for documentation-only changes unless required by the
+  existing pipeline. Let automatically triggered CI finish unattended.
+- Read unchanged instructions, logs, and files once per task where possible.
+  Search narrowly, batch independent reads, and preserve a short durable handoff
+  instead of repeatedly reconstructing the full task context.
+- Send updates for meaningful transitions, findings, blockers, and completion.
+  Do not keep an otherwise idle AI turn alive solely to narrate a remote job.
+
+
 ## Active Plugins
 
 ### Superpowers (superpowers@claude-plugins-official) — ENABLED
